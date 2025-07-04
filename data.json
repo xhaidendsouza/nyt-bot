@@ -1,0 +1,43 @@
+{
+  "users": {
+    "715963994124451961": {
+      "username": "wadwad_x",
+      "wordle": {
+        "2025-07-04": {
+          "puzzle": 1475,
+          "guesses": 3,
+          "failed": false
+        }
+      },
+      "connections": {
+        "2025-07-04": {
+          "puzzle": 753,
+          "mistakes": 4,
+          "score": 65
+        }
+      }
+    },
+    "737731464665366608": {
+      "username": "wadwad_b",
+      "wordle": {
+        "2025-07-04": {
+          "puzzle": 1475,
+          "guesses": 3,
+          "failed": false
+        }
+      },
+      "connections": {}
+    },
+    "719729047848091689": {
+      "username": "wadwad_a",
+      "wordle": {
+        "2025-07-04": {
+          "puzzle": 1476,
+          "guesses": 4,
+          "failed": false
+        }
+      },
+      "connections": {}
+    }
+  }
+}
