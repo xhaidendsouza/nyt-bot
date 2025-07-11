@@ -3,15 +3,21 @@
     "715963994124451961": {
       "username": "wadwad_x",
       "wordle": {
-        "2025-07-04": {
-          "puzzle": 1475,
+        "1475": {
           "guesses": 3,
+          "failed": false
+        },
+        "1474": {
+          "guesses": 5,
           "failed": false
         }
       },
       "connections": {
-        "2025-07-04": {
-          "puzzle": 753,
+        "753": {
+          "mistakes": 4,
+          "score": 65
+        },
+        "752": {
           "mistakes": 4,
           "score": 65
         }
@@ -20,20 +26,37 @@
     "737731464665366608": {
       "username": "wadwad_b",
       "wordle": {
-        "2025-07-04": {
-          "puzzle": 1475,
+        "1475": {
           "guesses": 3,
+          "failed": false
+        },
+        "1445": {
+          "guesses": 3,
+          "failed": false
+        },
+        "1446": {
+          "guesses": 4,
           "failed": false
         }
       },
-      "connections": {}
+      "connections": {},
+      "mini": {
+        "2025-07-10": 66
+      }
     },
     "719729047848091689": {
       "username": "wadwad_a",
       "wordle": {
-        "2025-07-04": {
-          "puzzle": 1476,
+        "1476": {
           "guesses": 4,
+          "failed": false
+        },
+        "1445": {
+          "guesses": 3,
+          "failed": false
+        },
+        "1482": {
+          "guesses": 1,
           "failed": false
         }
       },
