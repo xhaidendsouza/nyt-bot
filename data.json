@@ -32,6 +32,10 @@
         "752": {
           "mistakes": 4,
           "score": 65
+        },
+        "762": {
+          "mistakes": 4,
+          "score": 66
         }
       }
     },
@@ -94,6 +98,18 @@
         "1045": {
           "guesses": 6,
           "failed": true
+        },
+        "1456": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1457": {
+          "guesses": 5,
+          "failed": false
+        },
+        "9999": {
+          "guesses": 3,
+          "failed": false
         }
       },
       "connections": {
@@ -104,6 +120,18 @@
         "761": {
           "mistakes": 4,
           "score": 57
+        },
+        "888": {
+          "mistakes": 0,
+          "score": 98
+        },
+        "889": {
+          "mistakes": 0,
+          "score": 98
+        },
+        "899": {
+          "mistakes": 0,
+          "score": 99
         }
       },
       "mini": {

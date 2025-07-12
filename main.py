@@ -1,7 +1,13 @@
 import discord, os, json, dotenv, re, sys, pybound, io, calendar
-import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, timezone
 from PIL import Image, ImageDraw, ImageFont
+
+# MATPLOT LIB
+import matplotlib.pyplot as plt
+from matplotlib import font_manager
+font_path = "assets/Franklin-Gothic.ttf"
+font_manager.fontManager.addfont(font_path)
+franklin_font = font_manager.FontProperties(fname=font_path)
 
 # Emoji names and IDs (copy and paste for messaging and maybe reacting)
 # <:ninety:1393042776114855966> <:eighty:1393042634104111124> <:seventy:1393061147363508254> <:sixty:1393039767746117652> <:fifty:1393060774087360552>
@@ -38,13 +44,8 @@ def generate_wordle_bar_chart(distribution, filepath="assets/wordle_bar_chart.pn
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    # Gray color used by NYT Wordle bars
     bar_color = "#787c7e"
-
-    # Minimum width to just fit number "0" plus padding
     min_bar_width = 0.15
-
-    # Adjust distribution for zero values: if zero, set width to min_bar_width, else original value
     adjusted_distribution = [val if val > 0 else min_bar_width for val in distribution]
 
     bars = ax.barh(guess_labels, adjusted_distribution, color=bar_color)
@@ -55,32 +56,46 @@ def generate_wordle_bar_chart(distribution, filepath="assets/wordle_bar_chart.pn
         padding = 0.05
         text_x = bar_width - padding
         text_color = "white"
-        ax.text(text_x, bar.get_y() + bar.get_height() / 2,
-                label, ha='right', va='center', color=text_color,
-                fontsize=12, fontweight='bold')
+        y = bar.get_y() + bar.get_height() / 2
 
-    # Clean up plot
-    ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)  # Add 1 unit space for padding
+        for dx, dy in [(-0.25, 0), (0.25, 0), (0, -0.25), (0, 0.25)]:
+            ax.text(
+                text_x + dx * 0.01,
+                y + dy * 0.01,
+                label,
+                ha='right',
+                va='center',
+                color=text_color,
+                fontsize=12,
+                fontproperties=franklin_font
+            )
+
+        ax.text(
+            text_x,
+            y,
+            label,
+            ha='right',
+            va='center',
+            color=text_color,
+            fontsize=12,
+            fontproperties=franklin_font
+        )
+
+    ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)
     ax.set_xticks([])
-
-    # Remove y-axis ticks (the little dash lines)
     ax.yaxis.set_ticks_position('none')
-
-    # Set y-ticks and labels with desired font and style (black color)
     ax.set_yticks(range(len(guess_labels)))
+
     labels = ax.set_yticklabels(
         guess_labels,
         fontsize=12,
         fontweight='bold',
-        color='black'
+        color='black',
+        fontproperties=franklin_font
     )
 
-    # Move last label "X" down a bit
-    # Get text object for last label
     last_label = labels[-1]
-    # Get current position (x, y) in display coordinates, then shift y down slightly
     pos = last_label.get_position()
-    # pos is (x,y), y is the vertical position; decrease y to move label down
     last_label.set_position((pos[0], pos[1] - 0.15))
 
     ax.set_xlabel("")
@@ -142,6 +157,7 @@ async def regex_message(message):
         save_data(data)
         await message.add_reaction("<:wordle:1393063212248858805>")
         await message.add_reaction(r) if (r := {7.5: "❌", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣"}.get(guesses)) else None
+        await message.add_reaction(s) if (s := {7.5: ""})
         return
 
 
@@ -169,7 +185,7 @@ async def regex_message(message):
         }.get((solved, mistakes), 50)
 
         bonus = 0
-        if groups == ["🟪", "🟦", "🟨", "🟩"]:
+        if groups == ["🟪", "🟦", "🟩", "🟨"]:
             bonus += 4
         elif groups[:2] == ["🟪", "🟦"]:
             bonus += 3
