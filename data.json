@@ -12,7 +12,7 @@
           "failed": false
         },
         "1359": {
-          "guesses": 5,
+          "guesses": 4,
           "failed": false
         },
         "1259": {
@@ -21,6 +21,10 @@
         },
         "1759": {
           "guesses": 5,
+          "failed": false
+        },
+        "1888": {
+          "guesses": 6,
           "failed": false
         }
       },
@@ -34,9 +38,13 @@
           "score": 65
         },
         "762": {
-          "mistakes": 4,
-          "score": 66
+          "mistakes": 3,
+          "score": 51
         }
+      },
+      "mini": {
+        "2025-12-23": 1200,
+        "Saturday 07/12/2025": 12
       }
     },
     "737731464665366608": {
@@ -80,7 +88,7 @@
           "failed": false
         },
         "1004": {
-          "guesses": 6,
+          "guesses": 7.5,
           "failed": true
         },
         "1001": {
@@ -88,15 +96,15 @@
           "failed": false
         },
         "1014": {
-          "guesses": 6,
+          "guesses": 7.5,
           "failed": true
         },
         "1055": {
-          "guesses": 1,
-          "failed": false
+          "guesses": 7.5,
+          "failed": true
         },
         "1045": {
-          "guesses": 6,
+          "guesses": 7.5,
           "failed": true
         },
         "1456": {
@@ -110,6 +118,18 @@
         "9999": {
           "guesses": 3,
           "failed": false
+        },
+        "1888": {
+          "guesses": 1,
+          "failed": false
+        },
+        "85": {
+          "guesses": 3,
+          "failed": false
+        },
+        "4": {
+          "guesses": 7.5,
+          "failed": true
         }
       },
       "connections": {
@@ -122,20 +142,38 @@
           "score": 57
         },
         "888": {
-          "mistakes": 0,
-          "score": 98
+          "mistakes": 4,
+          "score": 68
         },
         "889": {
           "mistakes": 0,
-          "score": 98
+          "score": 99
         },
         "899": {
           "mistakes": 0,
-          "score": 99
+          "score": 98
+        },
+        "999": {
+          "mistakes": 0,
+          "score": 51
+        },
+        "887": {
+          "mistakes": 3,
+          "score": 53
+        },
+        "883": {
+          "mistakes": 4,
+          "score": 68
+        },
+        "884": {
+          "mistakes": 3,
+          "score": 77
         }
       },
       "mini": {
-        "2025-07-12": 217
+        "2025-07-12": 217,
+        "9999-99-99": 33333333,
+        "9999-12-12": 32432342
       }
     }
   }

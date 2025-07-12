@@ -1,13 +1,12 @@
 import discord, os, json, dotenv, re, sys, pybound, io, calendar
+from discord.ui import View, Button
+
+import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, timezone
 from PIL import Image, ImageDraw, ImageFont
 
-# MATPLOT LIB
-import matplotlib.pyplot as plt
-from matplotlib import font_manager
-font_path = "assets/Franklin-Gothic.ttf"
-font_manager.fontManager.addfont(font_path)
-franklin_font = font_manager.FontProperties(fname=font_path)
+from io import BytesIO
+
 
 # Emoji names and IDs (copy and paste for messaging and maybe reacting)
 # <:ninety:1393042776114855966> <:eighty:1393042634104111124> <:seventy:1393061147363508254> <:sixty:1393039767746117652> <:fifty:1393060774087360552>
@@ -21,7 +20,7 @@ bot = discord.Bot(intents=intents)
 DATA_FILE = "data.json"
 
 GAME_CHANNEL_ID = 814691396841766952  # replace with your #gaming channel ID
-WORDLE_REGEX = r"Wordle (\d{3,5}) ([1-6X])/6"
+WORDLE_REGEX = r"Wordle (\d+) ([1-6X])/6"
 CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
 
 def handle_seconds(seconds):
@@ -34,7 +33,7 @@ def handle_seconds(seconds):
         t_time = f"{minutes}:{seconds:02}"
         return t_time
 
-def generate_wordle_bar_chart(distribution, filepath="assets/wordle_bar_chart.png"):
+def generate_wordle_bar_chart(distribution, filepath):
     guess_labels = ['1', '2', '3', '4', '5', '6', 'X']
     if len(distribution) == 6:
         distribution.append(0)  # Add fails as "X"
@@ -44,69 +43,83 @@ def generate_wordle_bar_chart(distribution, filepath="assets/wordle_bar_chart.pn
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    bar_color = "#787c7e"
-    min_bar_width = 0.15
+    bar_color = "#6aaa64"  # Wordle green
+    min_bar_width = 0.2
+
     adjusted_distribution = [val if val > 0 else min_bar_width for val in distribution]
 
-    bars = ax.barh(guess_labels, adjusted_distribution, color=bar_color)
+    # Leave space for the gray box: bars start just right of 1.1 on x-axis
+    bars = ax.barh(range(len(guess_labels)), adjusted_distribution, color=bar_color, left=0.3)
 
+    # Add numbers inside the bars, moved closer to bar edges (padding reduced)
     for bar, value in zip(bars, distribution):
         bar_width = bar.get_width()
         label = str(value)
-        padding = 0.05
-        text_x = bar_width - padding
-        text_color = "white"
+        text_x = bar.get_x() + bar_width - 0.02  # closer to right edge
         y = bar.get_y() + bar.get_height() / 2
-
-        for dx, dy in [(-0.25, 0), (0.25, 0), (0, -0.25), (0, 0.25)]:
-            ax.text(
-                text_x + dx * 0.01,
-                y + dy * 0.01,
-                label,
-                ha='right',
-                va='center',
-                color=text_color,
-                fontsize=12,
-                fontproperties=franklin_font
-            )
-
         ax.text(
             text_x,
             y,
             label,
             ha='right',
             va='center',
-            color=text_color,
+            color='white',
             fontsize=12,
-            fontproperties=franklin_font
+            fontweight='bold'
         )
 
-    ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)
+    rect_x_axes = 0.0       # very left of axes
+    rect_width_axes = 0.08  # narrow fixed width (8% of axes width)
+    rect_y_axes = 0         # bottom of axes
+    rect_height_axes = 1    # full height of axes
+
+    ax.add_patch(plt.Rectangle(
+        (rect_x_axes, rect_y_axes),
+        rect_width_axes,
+        rect_height_axes,
+        color="#787c7e",
+        zorder=0,
+        linewidth=0,
+        joinstyle='round',
+        fill=True,
+        transform=ax.transAxes  # key: use axes coordinate system!
+    ))
+
+    # Now add the y-axis labels inside the gray box, centered vertically per bar
+    for i, label in enumerate(guess_labels):
+        ax.text(
+            rect_x_axes + rect_width_axes/2,  # center horizontally inside the box
+            i,                      # vertical position
+            label,
+            ha='center',
+            va='center',
+            color='white',
+            fontsize=12,
+            fontweight='bold'
+        )
+
+    # Hide the real y-axis ticks and labels
+    ax.set_yticks([])
     ax.set_xticks([])
-    ax.yaxis.set_ticks_position('none')
-    ax.set_yticks(range(len(guess_labels)))
 
-    labels = ax.set_yticklabels(
-        guess_labels,
-        fontsize=12,
-        fontweight='bold',
-        color='black',
-        fontproperties=franklin_font
-    )
+    # Set y limits to tightly fit bars
+    ax.set_ylim(-0.5, len(guess_labels) - 0.5)
 
-    last_label = labels[-1]
-    pos = last_label.get_position()
-    last_label.set_position((pos[0], pos[1] - 0.15))
+    # Adjust x limit to fit bars and labels comfortably
+    ax.set_xlim(0, max(max(distribution), min_bar_width) + 2)
 
-    ax.set_xlabel("")
-    ax.set_ylabel("")
-
+    # Remove spines for a clean look
     for spine in ax.spines.values():
         spine.set_visible(False)
 
+    # Transparent background
+    fig.patch.set_alpha(0)
+    ax.set_facecolor("none")
+
     plt.tight_layout()
-    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    plt.savefig(filepath, dpi=300, bbox_inches='tight', transparent=True)
     plt.close()
+
 
 def load_data():
     try:
@@ -146,18 +159,13 @@ async def regex_message(message):
         guesses = 7.5 if result == "X" else int(result)
         failed = result == "X"
 
-        # Prevent duplicates
-        if puzzle_key in data["users"][uid].get("wordle", {}):
-            return
-
         data["users"][uid]["wordle"][puzzle_key] = {
             "guesses": guesses,
             "failed": failed
         }
         save_data(data)
         await message.add_reaction("<:wordle:1393063212248858805>")
-        await message.add_reaction(r) if (r := {7.5: "❌", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣"}.get(guesses)) else None
-        await message.add_reaction(s) if (s := {7.5: ""})
+        [await message.add_reaction(e) for e in {1: ("1️⃣", "🤩"), 2: ("2️⃣", "😎"), 3: ("3️⃣", "😃"), 4: ("4️⃣", "🙂"), 5: ("5️⃣", "😬"), 6: ("6️⃣", "😅"), 7.5: ("❌", "😔")}[guesses]]
         return
 
 
@@ -196,35 +204,18 @@ async def regex_message(message):
 
         score = base + bonus
 
-        # Prevent duplicates
-        if puzzle_key in data["users"][uid].get("connections", {}):
-            return
-
         data["users"][uid]["connections"][puzzle_key] = {
             "mistakes": mistakes,
             "score": score
         }
         save_data(data)
-        tens = score // 10
-        ones = score % 10
 
         await message.add_reaction("<:connections:1393063471616102461>")
-        # <:ninety:1393042776114855966> <:eighty:1393042634104111124> <:seventy:1393061147363508254>
-        # <:fifty:1393060774087360552> <:sixty:1393039767746117652>
-        match tens:
-            case 5:
-                await message.add_reaction("<:fifty:1393060774087360552>")
-            case 6:
-                await message.add_reaction("<:sixty:1393039767746117652>")
-            case 7:
-                await message.add_reaction("<:seventy:1393061147363508254>")
-            case 8:
-                await message.add_reaction("<:eighty:1393042634104111124>")
-            case 9:
-                await message.add_reaction("<:ninety:1393042776114855966>")
-            
-        await message.add_reaction(r) if (r := {0: "0️⃣", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣"}.get(ones)) else None
-        return
+        await message.add_reaction({5: "<:fifty:1393060774087360552>", 6: "<:sixty:1393039767746117652>", 7: "<:seventy:1393061147363508254>", 8: "<:eighty:1393042634104111124>", 9: "<:ninety:1393042776114855966>"}[score // 10])
+        await message.add_reaction({0: "0️⃣", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣"}[score % 10])
+        await message.add_reaction({0: "🤩", 1: "😎", 2: "🙂", 3: "😅", 4: "😔"}[mistakes])
+        if score == 99: [await message.add_reaction(e) for e in ("⏪", "🌈")]
+
 
 
 @bot.event
@@ -282,10 +273,11 @@ async def wordle_stats(ctx, user: discord.User = None):
     entries = data["users"][uid]["wordle"]
     total = len(entries)
     wins = sum(1 for e in entries.values() if not e["failed"])
-    distribution = [0] * 6  # guesses 1–6
+    distribution = [0] * 6
     fails = 0
     guesses_list = []
 
+    # --- All-time stats ---
     for e in entries.values():
         if e["failed"]:
             fails += 1
@@ -295,19 +287,117 @@ async def wordle_stats(ctx, user: discord.User = None):
             guesses_list.append(g)
 
     avg_score = round(sum(guesses_list) / len(guesses_list), 2) if guesses_list else "N/A"
+    win_rate = round((wins / total) * 100, 2) if total else 0
 
-    generate_wordle_bar_chart(distribution + [fails], filepath="assets/wordle_bar_chart.png")
+    # --- Determine latest Wordle number and 14-day window ---
+    wordle_numbers = sorted(int(k) for k in entries.keys())
+    latest_wordle = wordle_numbers[-1] if wordle_numbers else None
+    if latest_wordle is None:
+        await ctx.respond("No Wordle data available.")
+        return
 
-    file = discord.File("assets/wordle_bar_chart.png", filename="assets/wordle_bar_chart.png")
+    start_wordle_14day = max(latest_wordle - 13, wordle_numbers[0])  # inclusive
 
-    # dist_str = "\n".join([f"{i+1}: {n}" for i, n in enumerate(distribution)])
-    await ctx.respond(
-        f"<:wordle:1393063212248858805> **Wordle Stats for {user.mention}**\n"
-        f"Games Played: {total}\n"
-        f"Win Rate: {round((wins / total) * 100, 2)}%\n"
-        f"Average Guesses: {avg_score}\n", file=file
-        # f"Distribution:\n```{dist_str}\n```"
+    # --- 14-day stats ---
+    dist_14day = [0] * 6
+    fails_14day = 0
+    guesses_14day = []
+    total_14day = 0
+    wins_14day = 0
+
+    for wn in wordle_numbers:
+        if start_wordle_14day <= wn <= latest_wordle:
+            e = entries[str(wn)]
+            total_14day += 1
+            if e["failed"]:
+                fails_14day += 1
+            else:
+                wins_14day += 1
+                g = e["guesses"]
+                dist_14day[g - 1] += 1
+                guesses_14day.append(g)
+
+    avg_score_14day = round(sum(guesses_14day) / len(guesses_14day), 2) if guesses_14day else "N/A"
+    win_rate_14day = round((wins_14day / total_14day) * 100, 2) if total_14day else 0
+
+    # --- Streak Calculations ---
+    max_streak = 0
+    current_streak = 0
+    temp_streak = 0
+    last_seen = None
+
+    sorted_entries = sorted(((int(k), v) for k, v in entries.items()), reverse=True)
+
+    for num, entry in sorted_entries:
+        if last_seen is None or last_seen - 1 == num:
+            if not entry["failed"]:
+                temp_streak += 1
+                if current_streak == 0:
+                    current_streak = temp_streak
+            else:
+                if current_streak == 0:
+                    current_streak = 0
+                temp_streak = 0
+        else:
+            if current_streak == 0:
+                current_streak = 0
+            temp_streak = 1 if not entry["failed"] else 0
+        max_streak = max(max_streak, temp_streak)
+        last_seen = num
+
+    # --- Charts ---
+    generate_wordle_bar_chart(distribution + [fails], filepath="assets/wordle_bar_chart_alltime.png")
+    generate_wordle_bar_chart(dist_14day + [fails_14day], filepath="assets/wordle_bar_chart_14day.png")
+
+    # --- Embeds ---
+    embed_alltime = discord.Embed(
+        title=f"<:wordle:1393063212248858805> All-Time Wordle Stats for {user.name}",
+        color=discord.Color.green()
     )
+    embed_alltime.add_field(name="Games Played", value=str(total))
+    embed_alltime.add_field(name="Win Rate", value=f"{win_rate}%")
+    embed_alltime.add_field(name="Average Guesses", value=str(avg_score))
+    embed_alltime.set_footer(text=f"Max Streak: {max_streak}")
+    embed_alltime.set_image(url="attachment://wordle_bar_chart_alltime.png")
+
+    embed_14day = discord.Embed(
+        title=f"<:wordle:1393063212248858805> Current Wordle Stats for {user.name}",
+        color=discord.Color.blurple()
+    )
+    embed_14day.add_field(name="Games Played", value=str(total_14day))
+    embed_14day.add_field(name="Win Rate", value=f"{win_rate_14day}%")
+    embed_14day.add_field(name="Average Guesses", value=str(avg_score_14day))
+    embed_14day.set_footer(text=f"Current Streak: {current_streak}")
+    embed_14day.set_image(url="attachment://wordle_bar_chart_14day.png")
+
+    pages = [
+        {"embed": embed_alltime, "filepath": "assets/wordle_bar_chart_alltime.png"},
+        {"embed": embed_14day, "filepath": "assets/wordle_bar_chart_14day.png"},
+    ]
+
+    view = View(timeout=120)
+    view.current_page = 1
+
+    toggle_button = Button(label="See All-Time Stats", style=discord.ButtonStyle.secondary)
+    view.add_item(toggle_button)
+
+    async def toggle_callback(interaction: discord.Interaction):
+        if interaction.user != ctx.author:
+            await interaction.response.send_message("You're not allowed to use this.", ephemeral=True)
+            return
+
+        view.current_page = 0 if view.current_page == 1 else 1
+        new_page = view.current_page
+        toggle_button.label = "See All-Time Stats" if new_page == 1 else "See Current Stats"
+
+        with open(pages[new_page]["filepath"], "rb") as f:
+            chart_file = discord.File(f, filename=pages[new_page]["filepath"].split("/")[-1])
+            await interaction.response.edit_message(embed=pages[new_page]["embed"], view=view, file=chart_file)
+
+    toggle_button.callback = toggle_callback
+
+    chart_file_14day = discord.File("assets/wordle_bar_chart_14day.png", filename="wordle_bar_chart_14day.png")
+    await ctx.respond(embed=embed_14day, view=view, file=chart_file_14day)
 
 # ----------- /connections_stats -------------
 connectionsGroup = bot.create_group(name="connections", description="connections")
@@ -327,17 +417,13 @@ async def connections_stats(ctx, user: discord.User = None):
     total = len(entries)
     scores = [e["score"] for e in entries.values()]
     avg_score = round(sum(scores) / len(scores), 2) if scores else "N/A"
-    perfects = sum(1 for e in entries.values() if e["score"] == 95)
-    max_score = max(scores) if scores else "N/A"
-    min_score = min(scores) if scores else "N/A"
+    perfects = sum(1 for e in entries.values() if e["score"] >= 95)
 
     await ctx.respond(
         f"<:connections:1393063471616102461> **Connections Stats for {user.mention}**\n"
         f"Games Played: {total}\n"
-        f"Perfect Solves (Score 95): {perfects}\n"
+        f"Perfect Solves: {perfects}\n"
         f"Average Score: {avg_score}\n"
-        f"Highest Score: {max_score}\n"
-        f"Lowest Score: {min_score}"
     )
 
 
@@ -416,7 +502,7 @@ async def leaderboard_connections(ctx, range: str):
 miniGroup = bot.create_group(name="mini", description="mini crossword")
 
 @miniGroup.command(name="report", description="Report your Mini Crossword result.")
-@discord.option("date", description="Date in YYYY-MM-DD format", required=True)
+@discord.option("date", description="Date in MM/DD/YYYY format", required=True)
 @discord.option("time", description="Completion time (in seconds or mm:ss)", required=True)
 async def mini_report(ctx, date: str, time: str):
     await ctx.defer()
@@ -436,17 +522,48 @@ async def mini_report(ctx, date: str, time: str):
         await ctx.respond("⚠️ Invalid time format. Use seconds or mm:ss.")
         return
 
+    try:
+        dt_obj = datetime.strptime(date, "%m/%d/%Y")
+        f_date = dt_obj.strftime("%A %m/%d/%Y")  # e.g., Friday 07/12/2025
+    except ValueError:
+        await ctx.respond("⚠️ Invalid date format. Use MM/DD/YYYY.")
+        return
+
+    # Store data
     data["users"].setdefault(uid, {"username": username, "wordle": {}, "connections": {}, "mini": {}})
     data["users"][uid]["username"] = username
     data["users"][uid].setdefault("mini", {})
-
-    # Overwrite or add the time for the date
-    data["users"][uid]["mini"][date] = total_seconds
+    data["users"][uid]["mini"][f_date] = total_seconds
     save_data(data)
-    f_date = datetime.strptime(date, "%Y-%m-%d").strftime("%A, %B %d, %Y")
-    t_time = handle_seconds(total_seconds)
-    
-    await ctx.respond(f"{user.mention} completed the {f_date} Mini Crossword in {t_time}.")
+
+    # Generate image
+    try:
+        img = Image.open("assets/mini_template.png").convert("RGBA")
+        draw = ImageDraw.Draw(img)
+
+        # Choose a font (you may need to provide your own TTF)
+
+        # Text positions
+        w, h = img.size
+
+        # Username center
+        text_user = username
+        text_w, text_h = draw.textsize(text_user)
+        draw.text(((w - text_w) / 2, h / 2 - text_h / 2), text_user, fill="black")
+
+        # Date bottom center
+        text_date = f_date
+        date_w, date_h = draw.textsize(text_date)
+        draw.text(((w - date_w) / 2, h - date_h - 40), text_date, fill="black")
+
+        # Send image
+        with BytesIO() as img_bytes:
+            img.save(img_bytes, format="PNG")
+            img_bytes.seek(0)
+            await ctx.respond(file=discord.File(img_bytes, filename="mini_report.png"))
+
+    except Exception as e:
+        await ctx.respond(f"❌ Failed to generate image: {e}")
 
 @miniGroup.command(name="stats", description="View someone's Mini Crossword stats.")
 @discord.option("user", description="User to view stats for", required=False)
