@@ -58,9 +58,29 @@
         "1482": {
           "guesses": 1,
           "failed": false
+        },
+        "1484": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1004": {
+          "guesses": 6,
+          "failed": true
+        },
+        "1001": {
+          "guesses": 5,
+          "failed": false
         }
       },
-      "connections": {}
+      "connections": {
+        "762": {
+          "mistakes": 4,
+          "score": 57
+        }
+      },
+      "mini": {
+        "2025-07-12": 217
+      }
     }
   }
 }

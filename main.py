@@ -1,4 +1,5 @@
 import discord, os, json, dotenv, re, sys, pybound, io, calendar
+import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, timezone
 from PIL import Image, ImageDraw, ImageFont
 
@@ -16,6 +17,64 @@ DATA_FILE = "data.json"
 GAME_CHANNEL_ID = 814691396841766952  # replace with your #gaming channel ID
 WORDLE_REGEX = r"Wordle (\d{3,5}) ([1-6X])/6"
 CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
+
+def handle_seconds(seconds):
+    if seconds < 60:
+        t_time = f"{seconds} seconds"
+        return t_time
+    else:
+        minutes = seconds // 60
+        seconds = seconds % 60
+        t_time = f"{minutes}:{seconds:02}"
+        return t_time
+
+def generate_wordle_bar_chart(distribution, filepath="wordle_bar_chart.png"):
+    guess_labels = ['1', '2', '3', '4', '5', '6', 'X']
+    if len(distribution) == 6:
+        distribution.append(0)  # Add fails as "X"
+
+    guess_labels = guess_labels[::-1]
+    distribution = distribution[::-1]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    # Gray color used by NYT Wordle bars
+    bar_color = "#787c7e"
+
+    # Minimum width to just fit number "0" plus padding
+    min_bar_width = 0.15
+
+    # Adjust distribution for zero values: if zero, set width to min_bar_width, else original value
+    adjusted_distribution = [val if val > 0 else min_bar_width for val in distribution]
+
+    bars = ax.barh(guess_labels, adjusted_distribution, color=bar_color)
+
+    for bar, value in zip(bars, distribution):
+        bar_width = bar.get_width()
+        label = str(value)
+        # Position text slightly padded inside the right edge
+        padding = 0.05
+        text_x = bar_width - padding
+        # Choose white text if bar wide enough, else black for visibility
+        text_color = "white"    
+        ax.text(text_x, bar.get_y() + bar.get_height() / 2,
+                label, ha='right', va='center', color=text_color,
+                fontsize=12, fontweight='bold')
+
+    # Clean up plot
+    ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)  # Add 1 unit space for padding
+    ax.set_xticks([])
+    ax.set_yticks(range(len(guess_labels)))
+    ax.set_yticklabels(guess_labels, fontsize=12)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    plt.close()
 
 def load_data():
     try:
@@ -64,7 +123,7 @@ async def regex_message(message):
             "failed": failed
         }
         save_data(data)
-        await message.add_reaction("📈")  # 📈
+        await message.add_reaction("<:wordle:1393063212248858805>")  # 📈
         return
 
     # ---- Connections Parsing ----
@@ -111,7 +170,7 @@ async def regex_message(message):
             "score": score
         }
         save_data(data)
-        await message.add_reaction("🧐")  # 🧠
+        await message.add_reaction("<:connections:1393063471616102461>")  # 🧠
 
 @bot.event
 async def on_message(message):
@@ -169,23 +228,30 @@ async def wordle_stats(ctx, user: discord.User = None):
     total = len(entries)
     wins = sum(1 for e in entries.values() if not e["failed"])
     distribution = [0] * 6  # guesses 1–6
+    fails = 0
     guesses_list = []
 
-    for puzzle_id, e in entries.items():
-        if not e["failed"]:
+    for e in entries.values():
+        if e["failed"]:
+            fails += 1
+        else:
             g = e["guesses"]
             distribution[g - 1] += 1
             guesses_list.append(g)
 
     avg_score = round(sum(guesses_list) / len(guesses_list), 2) if guesses_list else "N/A"
 
-    dist_str = "\n".join([f"{i+1}: {n}" for i, n in enumerate(distribution)])
+    generate_wordle_bar_chart(distribution + [fails], filepath="wordle_bar_chart.png")
+
+    file = discord.File("wordle_bar_chart.png", filename="wordle_bar_chart.png")
+
+    # dist_str = "\n".join([f"{i+1}: {n}" for i, n in enumerate(distribution)])
     await ctx.respond(
         f"📊 **Wordle Stats for {user.mention}**\n"
         f"Games Played: {total}\n"
         f"Win Rate: {round((wins / total) * 100, 2)}%\n"
-        f"Average Guesses: {avg_score}\n"
-        f"Distribution:\n```{dist_str}\n```"
+        f"Average Guesses: {avg_score}\n", file=file
+        # f"Distribution:\n```{dist_str}\n```"
     )
 
 # ----------- /connections_stats -------------
@@ -322,8 +388,10 @@ async def mini_report(ctx, date: str, time: str):
     # Overwrite or add the time for the date
     data["users"][uid]["mini"][date] = total_seconds
     save_data(data)
-
-    await ctx.respond("Report complete.")
+    f_date = datetime.strptime(date, "%Y-%m-%d").strftime("%A, %B %d, %Y")
+    t_time = handle_seconds(total_seconds)
+    
+    await ctx.respond(f"{user.mention} completed the {f_date} Mini Crossword in {t_time}.")
 
 @miniGroup.command(name="stats", description="View someone's Mini Crossword stats.")
 @discord.option("user", description="User to view stats for", required=False)
@@ -346,11 +414,13 @@ async def mini_stats(ctx, user: discord.User = None):
     best_time = min(entries.values())
     avg_14 = round(sum(last_14) / len(last_14), 2) if last_14 else "N/A"
 
+    
+
     await ctx.respond(
         f"🧠 **Mini Crossword Stats for {user.mention}**\n"
-        f"14-day Average: {avg_14} sec\n"
-        f"Best Time: {best_time} sec\n"
-        f"Games Recorded: {len(entries)}"
+        f"14-day Average: {handle_seconds(avg_14)} sec\n"
+        f"Best Time: {handle_seconds(best_time)} sec\n"
+        f"Games Recorded: {len(entries))}"
     )
 
 @miniGroup.command(name="leaderboard", description="Mini Crossword leaderboard.")
