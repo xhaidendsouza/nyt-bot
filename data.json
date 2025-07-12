@@ -10,6 +10,18 @@
         "1474": {
           "guesses": 5,
           "failed": false
+        },
+        "1359": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1259": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1759": {
+          "guesses": 5,
+          "failed": false
         }
       },
       "connections": {
@@ -70,10 +82,26 @@
         "1001": {
           "guesses": 5,
           "failed": false
+        },
+        "1014": {
+          "guesses": 6,
+          "failed": true
+        },
+        "1055": {
+          "guesses": 1,
+          "failed": false
+        },
+        "1045": {
+          "guesses": 6,
+          "failed": true
         }
       },
       "connections": {
         "762": {
+          "mistakes": 4,
+          "score": 57
+        },
+        "761": {
           "mistakes": 4,
           "score": 57
         }

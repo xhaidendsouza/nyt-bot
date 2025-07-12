@@ -20,15 +20,15 @@ CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
 
 def handle_seconds(seconds):
     if seconds < 60:
-        t_time = f"{seconds} seconds"
+        t_time = f"{int(round(seconds))} seconds"
         return t_time
     else:
-        minutes = seconds // 60
-        seconds = seconds % 60
+        minutes = int(round(seconds // 60))
+        seconds = int(round(seconds % 60))
         t_time = f"{minutes}:{seconds:02}"
         return t_time
 
-def generate_wordle_bar_chart(distribution, filepath="wordle_bar_chart.png"):
+def generate_wordle_bar_chart(distribution, filepath="assets/wordle_bar_chart.png"):
     guess_labels = ['1', '2', '3', '4', '5', '6', 'X']
     if len(distribution) == 6:
         distribution.append(0)  # Add fails as "X"
@@ -52,11 +52,9 @@ def generate_wordle_bar_chart(distribution, filepath="wordle_bar_chart.png"):
     for bar, value in zip(bars, distribution):
         bar_width = bar.get_width()
         label = str(value)
-        # Position text slightly padded inside the right edge
         padding = 0.05
         text_x = bar_width - padding
-        # Choose white text if bar wide enough, else black for visibility
-        text_color = "white"    
+        text_color = "white"
         ax.text(text_x, bar.get_y() + bar.get_height() / 2,
                 label, ha='right', va='center', color=text_color,
                 fontsize=12, fontweight='bold')
@@ -64,8 +62,27 @@ def generate_wordle_bar_chart(distribution, filepath="wordle_bar_chart.png"):
     # Clean up plot
     ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)  # Add 1 unit space for padding
     ax.set_xticks([])
+
+    # Remove y-axis ticks (the little dash lines)
+    ax.yaxis.set_ticks_position('none')
+
+    # Set y-ticks and labels with desired font and style (black color)
     ax.set_yticks(range(len(guess_labels)))
-    ax.set_yticklabels(guess_labels, fontsize=12)
+    labels = ax.set_yticklabels(
+        guess_labels,
+        fontsize=12,
+        fontweight='bold',
+        color='black'
+    )
+
+    # Move last label "X" down a bit
+    # Get text object for last label
+    last_label = labels[-1]
+    # Get current position (x, y) in display coordinates, then shift y down slightly
+    pos = last_label.get_position()
+    # pos is (x,y), y is the vertical position; decrease y to move label down
+    last_label.set_position((pos[0], pos[1] - 0.15))
+
     ax.set_xlabel("")
     ax.set_ylabel("")
 
@@ -111,7 +128,7 @@ async def regex_message(message):
         puzzle = int(wordle_match.group(1))
         puzzle_key = str(puzzle)
         result = wordle_match.group(2)
-        guesses = 6 if result == "X" else int(result)
+        guesses = 7.5 if result == "X" else int(result)
         failed = result == "X"
 
         # Prevent duplicates
@@ -123,8 +140,10 @@ async def regex_message(message):
             "failed": failed
         }
         save_data(data)
-        await message.add_reaction("<:wordle:1393063212248858805>")  # 📈
+        await message.add_reaction("<:wordle:1393063212248858805>")
+        await message.add_reaction(r) if (r := {7.5: "❌", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣"}.get(guesses)) else None
         return
+
 
     # ---- Connections Parsing ----
     conn_match = re.search(CONN_REGEX, content)
@@ -170,7 +189,27 @@ async def regex_message(message):
             "score": score
         }
         save_data(data)
-        await message.add_reaction("<:connections:1393063471616102461>")  # 🧠
+        tens = score // 10
+        ones = score % 10
+
+        await message.add_reaction("<:connections:1393063471616102461>")
+        # <:ninety:1393042776114855966> <:eighty:1393042634104111124> <:seventy:1393061147363508254>
+        # <:fifty:1393060774087360552> <:sixty:1393039767746117652>
+        match tens:
+            case 5:
+                await message.add_reaction("<:fifty:1393060774087360552>")
+            case 6:
+                await message.add_reaction("<:sixty:1393039767746117652>")
+            case 7:
+                await message.add_reaction("<:seventy:1393061147363508254>")
+            case 8:
+                await message.add_reaction("<:eighty:1393042634104111124>")
+            case 9:
+                await message.add_reaction("<:ninety:1393042776114855966>")
+            
+        await message.add_reaction(r) if (r := {0: "0️⃣", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣"}.get(ones)) else None
+        return
+
 
 @bot.event
 async def on_message(message):
@@ -241,13 +280,13 @@ async def wordle_stats(ctx, user: discord.User = None):
 
     avg_score = round(sum(guesses_list) / len(guesses_list), 2) if guesses_list else "N/A"
 
-    generate_wordle_bar_chart(distribution + [fails], filepath="wordle_bar_chart.png")
+    generate_wordle_bar_chart(distribution + [fails], filepath="assets/wordle_bar_chart.png")
 
-    file = discord.File("wordle_bar_chart.png", filename="wordle_bar_chart.png")
+    file = discord.File("assets/wordle_bar_chart.png", filename="assets/wordle_bar_chart.png")
 
     # dist_str = "\n".join([f"{i+1}: {n}" for i, n in enumerate(distribution)])
     await ctx.respond(
-        f"📊 **Wordle Stats for {user.mention}**\n"
+        f"<:wordle:1393063212248858805> **Wordle Stats for {user.mention}**\n"
         f"Games Played: {total}\n"
         f"Win Rate: {round((wins / total) * 100, 2)}%\n"
         f"Average Guesses: {avg_score}\n", file=file
@@ -277,7 +316,7 @@ async def connections_stats(ctx, user: discord.User = None):
     min_score = min(scores) if scores else "N/A"
 
     await ctx.respond(
-        f"🧩 **Connections Stats for {user.mention}**\n"
+        f"<:connections:1393063471616102461> **Connections Stats for {user.mention}**\n"
         f"Games Played: {total}\n"
         f"Perfect Solves (Score 95): {perfects}\n"
         f"Average Score: {avg_score}\n"
@@ -420,7 +459,7 @@ async def mini_stats(ctx, user: discord.User = None):
         f"🧠 **Mini Crossword Stats for {user.mention}**\n"
         f"14-day Average: {handle_seconds(avg_14)} sec\n"
         f"Best Time: {handle_seconds(best_time)} sec\n"
-        f"Games Recorded: {len(entries))}"
+        f"Games Recorded: {len(entries)}"
     )
 
 @miniGroup.command(name="leaderboard", description="Mini Crossword leaderboard.")
