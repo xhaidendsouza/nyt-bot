@@ -536,7 +536,7 @@ async def connections_stats(ctx, user: discord.User = None):
     embed_14day.add_field(name="# Perfects", value=str(perfects_14day))
     embed_14day.add_field(name="# Purple Firsts", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
     embed_14day.add_field(name="# Reverse Rainbows", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
-    embed_14day.set_footer(text=f"Current Win Streak: {current_streak}🔥 | Current Perfect Streak: {current_perfect_streak}🔥")
+    embed_14day.set_footer(text=f"Current Win Streak: {current_streak}🔥　　　　　　　　　　Current Perfect Streak: {current_perfect_streak}🔥")
     embed_14day.set_image(url="attachment://connections_mistake_14day.png")
 
     embed_alltime = discord.Embed(
@@ -549,7 +549,7 @@ async def connections_stats(ctx, user: discord.User = None):
     embed_alltime.add_field(name="Perfect Solves", value=str(perfects))
     embed_alltime.add_field(name="# Purple First", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
     embed_alltime.add_field(name="# Reverse Rainbow", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
-    embed_alltime.set_footer(text=f"Best Win Streak: {max_streak}🔥 | Best Perfect Streak: {perfect_streak}🔥")
+    embed_alltime.set_footer(text=f"Best Win Streak: {max_streak}🔥　　　　　　　　　　　　　Best Perfect Streak: {perfect_streak}🔥")
     embed_alltime.set_image(url="attachment://connections_mistake_alltime.png")
 
     pages = [
