@@ -31,20 +31,34 @@
       "connections": {
         "753": {
           "mistakes": 4,
-          "score": 65
+          "score": 65,
+          "purple_first": false
         },
         "752": {
           "mistakes": 4,
-          "score": 65
+          "score": 65,
+          "purple_first": false
         },
         "762": {
           "mistakes": 3,
-          "score": 51
+          "score": 51,
+          "purple_first": false
+        },
+        "763": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "764": {
+          "mistakes": 4,
+          "score": 68,
+          "purple_first": true
         }
       },
       "mini": {
         "2025-12-23": 1200,
-        "Saturday 07/12/2025": 12
+        "Saturday 07/12/2025": 12,
+        "Friday 12/13/2024": 65
       }
     },
     "737731464665366608": {
@@ -135,27 +149,33 @@
       "connections": {
         "762": {
           "mistakes": 4,
-          "score": 57
+          "score": 57,
+          "purple_first": false
         },
         "761": {
           "mistakes": 4,
-          "score": 57
+          "score": 57,
+          "purple_first": false
         },
         "888": {
           "mistakes": 4,
-          "score": 68
+          "score": 68,
+          "purple_first": true
         },
         "889": {
           "mistakes": 0,
-          "score": 99
+          "score": 99,
+          "purple_first": true
         },
         "899": {
           "mistakes": 0,
-          "score": 98
+          "score": 98,
+          "purple_first": true
         },
         "999": {
           "mistakes": 0,
-          "score": 51
+          "score": 51,
+          "purple_first": false
         },
         "887": {
           "mistakes": 3,
@@ -163,11 +183,13 @@
         },
         "883": {
           "mistakes": 4,
-          "score": 68
+          "score": 68,
+          "purple_first": true
         },
         "884": {
           "mistakes": 3,
-          "score": 77
+          "score": 77,
+          "purple_first": true
         }
       },
       "mini": {

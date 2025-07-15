@@ -33,29 +33,26 @@ def handle_seconds(seconds):
         t_time = f"{minutes}:{seconds:02}"
         return t_time
 
-def generate_wordle_bar_chart(distribution, filepath):
-    guess_labels = ['1', '2', '3', '4', '5', '6', 'X']
-    if len(distribution) == 6:
-        distribution.append(0)  # Add fails as "X"
+def generate_connections_mistake_chart(distribution, filepath):
+    guess_labels = ['0', '1', '2', '3', '4']  # Mistakes labels; 4 is loss
 
+    # Reverse for horizontal bar order (top to bottom)
     guess_labels = guess_labels[::-1]
     distribution = distribution[::-1]
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    bar_color = "#6aaa64"  # Wordle green
+    bar_color = "#787c7e"  # Gray bars
     min_bar_width = 0.2
-
     adjusted_distribution = [val if val > 0 else min_bar_width for val in distribution]
 
-    # Leave space for the gray box: bars start just right of 1.1 on x-axis
-    bars = ax.barh(range(len(guess_labels)), adjusted_distribution, color=bar_color, left=0.3)
+    bars = ax.barh(guess_labels, adjusted_distribution, color=bar_color)
 
-    # Add numbers inside the bars, moved closer to bar edges (padding reduced)
     for bar, value in zip(bars, distribution):
         bar_width = bar.get_width()
         label = str(value)
-        text_x = bar.get_x() + bar_width - 0.02  # closer to right edge
+        padding = 0.05
+        text_x = bar_width - padding
         y = bar.get_y() + bar.get_height() / 2
         ax.text(
             text_x,
@@ -68,58 +65,89 @@ def generate_wordle_bar_chart(distribution, filepath):
             fontweight='bold'
         )
 
-    rect_x_axes = 0.0       # very left of axes
-    rect_width_axes = 0.08  # narrow fixed width (8% of axes width)
-    rect_y_axes = 0         # bottom of axes
-    rect_height_axes = 1    # full height of axes
+    ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)
+    ax.set_xticks([])  # no x-axis ticks
 
-    ax.add_patch(plt.Rectangle(
-        (rect_x_axes, rect_y_axes),
-        rect_width_axes,
-        rect_height_axes,
-        color="#787c7e",
-        zorder=0,
-        linewidth=0,
-        joinstyle='round',
-        fill=True,
-        transform=ax.transAxes  # key: use axes coordinate system!
-    ))
+    # y-axis ticks but no line ticks or spine visible
+    ax.yaxis.set_ticks_position('none')
 
-    # Now add the y-axis labels inside the gray box, centered vertically per bar
-    for i, label in enumerate(guess_labels):
+    # Use y-ticks and labels
+    ax.set_yticks(range(len(guess_labels)))
+    ax.set_yticklabels(
+        guess_labels,
+        fontsize=12,
+        fontweight='bold',
+        color='black'
+    )
+
+    # White background and remove spines
+    ax.set_facecolor("white")
+    fig.patch.set_facecolor("white")
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(filepath, dpi=300, bbox_inches='tight', transparent=False)
+    plt.close()
+
+def generate_wordle_bar_chart(distribution, filepath):
+    guess_labels = ['1', '2', '3', '4', '5', '6', 'X']
+    if len(distribution) == 6:
+        distribution.append(0)  # Add fails as "X"
+
+    guess_labels = guess_labels[::-1]
+    distribution = distribution[::-1]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    bar_color = "#787c7e"  # NYT gray
+    min_bar_width = 0.2
+
+    adjusted_distribution = [val if val > 0 else min_bar_width for val in distribution]
+    bars = ax.barh(guess_labels, adjusted_distribution, color=bar_color)
+
+    for bar, value in zip(bars, distribution):
+        bar_width = bar.get_width()
+        label = str(value)
+        text_x = bar.get_x() + bar_width - 0.05
+        y = bar.get_y() + bar.get_height() / 2
         ax.text(
-            rect_x_axes + rect_width_axes/2,  # center horizontally inside the box
-            i,                      # vertical position
+            text_x,
+            y,
             label,
-            ha='center',
+            ha='right',
             va='center',
             color='white',
             fontsize=12,
             fontweight='bold'
         )
 
-    # Hide the real y-axis ticks and labels
-    ax.set_yticks([])
+    ax.set_xlim(0, max(max(distribution), min_bar_width) + 1)
     ax.set_xticks([])
+    ax.yaxis.set_ticks_position('none')
 
-    # Set y limits to tightly fit bars
-    ax.set_ylim(-0.5, len(guess_labels) - 0.5)
+    ax.set_yticks(range(len(guess_labels)))
+    labels = ax.set_yticklabels(
+        guess_labels,
+        fontsize=12,
+        fontweight='bold',
+        color='black'
+    )
 
-    # Adjust x limit to fit bars and labels comfortably
-    ax.set_xlim(0, max(max(distribution), min_bar_width) + 2)
+    # Move "X" label down slightly
+    labels[-1].set_position((labels[-1].get_position()[0], labels[-1].get_position()[1] - 0.15))
 
-    # Remove spines for a clean look
+    ax.set_xlabel("")
+    ax.set_ylabel("")
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    # Transparent background
-    fig.patch.set_alpha(0)
-    ax.set_facecolor("none")
+    fig.patch.set_alpha(1)           # opaque background
+    ax.set_facecolor("white")        # white plot background
 
     plt.tight_layout()
-    plt.savefig(filepath, dpi=300, bbox_inches='tight', transparent=True)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
-
 
 def load_data():
     try:
@@ -174,8 +202,13 @@ async def regex_message(message):
     if conn_match:
         puzzle = int(conn_match.group(1))
         puzzle_key = str(puzzle)
-        grid_raw = conn_match.group(2).strip().split("\n")
-        grid = [line.strip() for line in grid_raw if line.strip()]
+
+        # Split and filter lines that contain any Connections emoji
+        emoji_line_regex = re.compile(r"[🟪🟦🟨🟩]")
+        all_lines = conn_match.group(2).strip().split("\n")
+        grid = [line.strip() for line in all_lines if emoji_line_regex.search(line)]
+
+        # Init parsed values
         groups = []
         mistakes = 0
 
@@ -193,20 +226,27 @@ async def regex_message(message):
         }.get((solved, mistakes), 50)
 
         bonus = 0
+        purple_first = False
         if groups == ["🟪", "🟦", "🟩", "🟨"]:
             bonus += 4
+            purple_first = True
         elif groups[:2] == ["🟪", "🟦"]:
             bonus += 3
-        elif groups[:1] == ["🟦"]:
-            bonus += 1
+            purple_first = True
+        elif groups[:2] == ["🟦", "🟪"]:
+            bonus += 3
         elif groups[:1] == ["🟪"]:
             bonus += 2
+            purple_first = True
+        elif groups[:1] == ["🟦"]:
+            bonus += 1
 
         score = base + bonus
 
         data["users"][uid]["connections"][puzzle_key] = {
             "mistakes": mistakes,
-            "score": score
+            "score": score,
+            "purple_first": purple_first
         }
         save_data(data)
 
@@ -215,7 +255,6 @@ async def regex_message(message):
         await message.add_reaction({0: "0️⃣", 1: "1️⃣", 2: "2️⃣", 3: "3️⃣", 4: "4️⃣", 5: "5️⃣", 6: "6️⃣", 7: "7️⃣", 8: "8️⃣", 9: "9️⃣"}[score % 10])
         await message.add_reaction({0: "🤩", 1: "😎", 2: "🙂", 3: "😅", 4: "😔"}[mistakes])
         if score == 99: [await message.add_reaction(e) for e in ("⏪", "🌈")]
-
 
 
 @bot.event
@@ -357,7 +396,7 @@ async def wordle_stats(ctx, user: discord.User = None):
     embed_alltime.add_field(name="Games Played", value=str(total))
     embed_alltime.add_field(name="Win Rate", value=f"{win_rate}%")
     embed_alltime.add_field(name="Average Guesses", value=str(avg_score))
-    embed_alltime.set_footer(text=f"Max Streak: {max_streak}")
+    embed_alltime.set_footer(text=f"Best Streak: {max_streak}🔥")
     embed_alltime.set_image(url="attachment://wordle_bar_chart_alltime.png")
 
     embed_14day = discord.Embed(
@@ -367,7 +406,7 @@ async def wordle_stats(ctx, user: discord.User = None):
     embed_14day.add_field(name="Games Played", value=str(total_14day))
     embed_14day.add_field(name="Win Rate", value=f"{win_rate_14day}%")
     embed_14day.add_field(name="Average Guesses", value=str(avg_score_14day))
-    embed_14day.set_footer(text=f"Current Streak: {current_streak}")
+    embed_14day.set_footer(text=f"Current Streak: {current_streak}🔥")
     embed_14day.set_image(url="attachment://wordle_bar_chart_14day.png")
 
     pages = [
@@ -418,14 +457,129 @@ async def connections_stats(ctx, user: discord.User = None):
     scores = [e["score"] for e in entries.values()]
     avg_score = round(sum(scores) / len(scores), 2) if scores else "N/A"
     perfects = sum(1 for e in entries.values() if e["score"] >= 95)
+    wins = sum(1 for e in entries.values() if e["mistakes"] <= 3)
 
-    await ctx.respond(
-        f"<:connections:1393063471616102461> **Connections Stats for {user.mention}**\n"
-        f"Games Played: {total}\n"
-        f"Perfect Solves: {perfects}\n"
-        f"Average Score: {avg_score}\n"
+    # Mistake distribution 0-4 (4 = loss)
+    mistakes_list = [e["mistakes"] for e in entries.values()]
+    mistake_distribution = [mistakes_list.count(i) for i in range(5)]
+
+    # Calculate latest puzzle and 14-day rolling window
+    puzzle_keys = sorted(int(k) for k in entries.keys())
+    latest_puzzle = puzzle_keys[-1] if puzzle_keys else None
+    if latest_puzzle is None:
+        await ctx.respond("No Connections data available.")
+        return
+
+    start_puzzle_14day = max(latest_puzzle - 13, puzzle_keys[0])  # inclusive
+
+    # 14-day rolling stats
+    scores_14day = []
+    perfects_14day = 0
+    mistakes_14day = []
+    total_14day = 0
+    wins_14day = 0
+
+    for pk in puzzle_keys:
+        if start_puzzle_14day <= pk <= latest_puzzle:
+            e = entries[str(pk)]
+            total_14day += 1
+            scores_14day.append(e["score"])
+            if e["score"] >= 95:
+                perfects_14day += 1
+            if e["mistakes"] <= 3:
+                wins_14day += 1
+            mistakes_14day.append(e["mistakes"])
+
+    avg_score_14day = round(sum(scores_14day) / len(scores_14day), 2) if scores_14day else "N/A"
+    mistake_distribution_14day = [mistakes_14day.count(i) for i in range(5)]
+
+    # Calculate streaks (perfect and regular)
+    sorted_entries = sorted(((int(k), v) for k, v in entries.items()), reverse=True)
+
+    max_streak = 0
+    current_streak = 0
+    perfect_streak = 0
+    current_perfect_streak = 0
+    last_seen = None
+
+    for num, entry in sorted_entries:
+        if last_seen is None or last_seen - 1 == num:
+            if entry["score"] >= 95:
+                current_perfect_streak += 1
+                current_streak += 1
+            else:
+                current_perfect_streak = 0
+                if entry["mistakes"] <= 3:  # consider any non-loss as part of streak
+                    current_streak += 1
+                else:
+                    current_streak = 0
+        else:
+            current_streak = 1 if entry["mistakes"] <= 3 else 0
+            current_perfect_streak = 1 if entry["score"] >= 95 else 0
+
+        max_streak = max(max_streak, current_streak)
+        perfect_streak = max(perfect_streak, current_perfect_streak)
+        last_seen = num
+
+    # Generate charts
+    generate_connections_mistake_chart(mistake_distribution_14day, "assets/connections_mistake_14day.png")
+    generate_connections_mistake_chart(mistake_distribution, "assets/connections_mistake_alltime.png")
+
+    # Embeds
+    embed_14day = discord.Embed(
+        title=f"<:connections:1393063471616102461> Current Connections Stats for {user.name}",
+        color=discord.Color.blurple()
     )
+    embed_14day.add_field(name="Games Played", value=str(total_14day))
+    embed_14day.add_field(name="Win Rate", value=f"{round((wins_14day / total_14day) * 100, 2) if total_14day else 0}%")
+    embed_14day.add_field(name="Average Skill Score", value=str(avg_score_14day))
+    embed_14day.add_field(name="# Perfects", value=str(perfects_14day))
+    embed_14day.add_field(name="# Purple Firsts", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
+    embed_14day.add_field(name="# Reverse Rainbows", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
+    embed_14day.set_footer(text=f"Current Win Streak: {current_streak}🔥 | Current Perfect Streak: {current_perfect_streak}🔥")
+    embed_14day.set_image(url="attachment://connections_mistake_14day.png")
 
+    embed_alltime = discord.Embed(
+        title=f"<:connections:1393063471616102461> All-Time Connections Stats for {user.name}",
+        color=discord.Color.green()
+    )
+    embed_alltime.add_field(name="Games Played", value=str(total))
+    embed_alltime.add_field(name="Win Rate", value=f"{round((wins / total) * 100, 2) if total else 0}%")
+    embed_alltime.add_field(name="Average Skill Score", value=str(avg_score))
+    embed_alltime.add_field(name="Perfect Solves", value=str(perfects))
+    embed_alltime.add_field(name="# Purple First", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
+    embed_alltime.add_field(name="# Reverse Rainbow", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
+    embed_alltime.set_footer(text=f"Best Win Streak: {max_streak}🔥 | Best Perfect Streak: {perfect_streak}🔥")
+    embed_alltime.set_image(url="attachment://connections_mistake_alltime.png")
+
+    pages = [
+        {"embed": embed_14day, "filepath": "assets/connections_mistake_14day.png"},
+        {"embed": embed_alltime, "filepath": "assets/connections_mistake_alltime.png"},
+    ]
+
+    view = View(timeout=120)
+    view.current_page = 0
+
+    toggle_button = Button(label="See All-Time Stats", style=discord.ButtonStyle.secondary)
+    view.add_item(toggle_button)
+
+    async def toggle_callback(interaction: discord.Interaction):
+        if interaction.user != ctx.author:
+            await interaction.response.send_message("You're not allowed to use this.", ephemeral=True)
+            return
+
+        view.current_page = 1 if view.current_page == 0 else 0
+        new_page = view.current_page
+        toggle_button.label = "See Current Stats" if new_page == 1 else "See All-Time Stats"
+
+        with open(pages[new_page]["filepath"], "rb") as f:
+            chart_file = discord.File(f, filename=pages[new_page]["filepath"].split("/")[-1])
+            await interaction.response.edit_message(embed=pages[new_page]["embed"], view=view, file=chart_file)
+
+    toggle_button.callback = toggle_callback
+
+    chart_file_14day = discord.File("assets/connections_mistake_14day.png", filename="connections_mistake_14day.png")
+    await ctx.respond(embed=embed_14day, view=view, file=chart_file_14day)
 
 # ----------- /wordle_leaderboard -------------
 @wordleGroup.command(name="leaderboard", description="Wordle leaderboard.")
