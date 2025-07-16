@@ -19,7 +19,8 @@ bot = discord.Bot(intents=intents)
 
 DATA_FILE = "data.json"
 
-GAME_CHANNEL_ID = 814691396841766952  # replace with your #gaming channel ID
+GAME_CHANNEL_ID = 814691396841766952  # Parrot Server
+GAME_CHANNEL_ID = 1330386402432651355 # Dormin' Difference
 WORDLE_REGEX = r"Wordle (\d+) ([1-6X])/6"
 CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
 
