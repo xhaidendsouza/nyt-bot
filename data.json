@@ -8,7 +8,7 @@
           "failed": false
         },
         "1474": {
-          "guesses": 3,
+          "guesses": 5,
           "failed": false
         },
         "1359": {
@@ -142,6 +142,70 @@
         "1486": {
           "guesses": 7.5,
           "failed": true
+        },
+        "1487": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1488": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1490": {
+          "guesses": 3,
+          "failed": false
+        },
+        "1489": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1491": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1492": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1494": {
+          "guesses": 3,
+          "failed": false
+        },
+        "1495": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1496": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1497": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1498": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1499": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1500": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1501": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1502": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1512": {
+          "guesses": 4,
+          "failed": false
         }
       },
       "connections": {
@@ -151,13 +215,13 @@
           "purple_first": false
         },
         "752": {
-          "mistakes": 0,
-          "score": 97,
-          "purple_first": true
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
         },
         "762": {
-          "mistakes": 4,
-          "score": 66,
+          "mistakes": 3,
+          "score": 51,
           "purple_first": false
         },
         "763": {
@@ -166,8 +230,8 @@
           "purple_first": false
         },
         "764": {
-          "mistakes": 0,
-          "score": 98,
+          "mistakes": 4,
+          "score": 68,
           "purple_first": true
         },
         "718": {
@@ -334,6 +398,86 @@
           "mistakes": 3,
           "score": 73,
           "purple_first": false
+        },
+        "765": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "766": {
+          "mistakes": 1,
+          "score": 90,
+          "purple_first": true
+        },
+        "767": {
+          "mistakes": 0,
+          "score": 99,
+          "purple_first": true
+        },
+        "768": {
+          "mistakes": 0,
+          "score": 98,
+          "purple_first": true
+        },
+        "769": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "770": {
+          "mistakes": 1,
+          "score": 91,
+          "purple_first": true
+        },
+        "771": {
+          "mistakes": 2,
+          "score": 81,
+          "purple_first": false
+        },
+        "772": {
+          "mistakes": 3,
+          "score": 74,
+          "purple_first": false
+        },
+        "773": {
+          "mistakes": 3,
+          "score": 74,
+          "purple_first": false
+        },
+        "774": {
+          "mistakes": 0,
+          "score": 96,
+          "purple_first": false
+        },
+        "775": {
+          "mistakes": 0,
+          "score": 95,
+          "purple_first": false
+        },
+        "776": {
+          "mistakes": 2,
+          "score": 84,
+          "purple_first": true
+        },
+        "777": {
+          "mistakes": 4,
+          "score": 66,
+          "purple_first": false
+        },
+        "778": {
+          "mistakes": 4,
+          "score": 57,
+          "purple_first": false
+        },
+        "779": {
+          "mistakes": 4,
+          "score": 66,
+          "purple_first": false
+        },
+        "780": {
+          "mistakes": 0,
+          "score": 98,
+          "purple_first": false
         }
       },
       "mini": {
@@ -355,6 +499,10 @@
         },
         "1446": {
           "guesses": 4,
+          "failed": false
+        },
+        "1512": {
+          "guesses": 6,
           "failed": false
         }
       },
@@ -425,6 +573,10 @@
         "4": {
           "guesses": 7.5,
           "failed": true
+        },
+        "1512": {
+          "guesses": 4,
+          "failed": false
         }
       },
       "connections": {
@@ -453,11 +605,6 @@
           "score": 98,
           "purple_first": true
         },
-        "999": {
-          "mistakes": 0,
-          "score": 51,
-          "purple_first": false
-        },
         "887": {
           "mistakes": 3,
           "score": 53
@@ -471,6 +618,11 @@
           "mistakes": 3,
           "score": 77,
           "purple_first": true
+        },
+        "999": {
+          "mistakes": 0,
+          "score": 51,
+          "purple_first": false
         }
       },
       "mini": {
@@ -613,6 +765,70 @@
         "1486": {
           "guesses": 7.5,
           "failed": true
+        },
+        "1487": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1488": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1489": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1490": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1491": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1492": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1493": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1494": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1495": {
+          "guesses": 3,
+          "failed": false
+        },
+        "1496": {
+          "guesses": 6,
+          "failed": false
+        },
+        "1497": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1498": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1499": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1500": {
+          "guesses": 7.5,
+          "failed": true
+        },
+        "1501": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1502": {
+          "guesses": 4,
+          "failed": false
         }
       },
       "connections": {
@@ -815,6 +1031,86 @@
           "mistakes": 4,
           "score": 65,
           "purple_first": false
+        },
+        "765": {
+          "mistakes": 4,
+          "score": 57,
+          "purple_first": false
+        },
+        "766": {
+          "mistakes": 4,
+          "score": 50,
+          "purple_first": false
+        },
+        "767": {
+          "mistakes": 1,
+          "score": 88,
+          "purple_first": false
+        },
+        "768": {
+          "mistakes": 2,
+          "score": 81,
+          "purple_first": false
+        },
+        "769": {
+          "mistakes": 4,
+          "score": 57,
+          "purple_first": false
+        },
+        "770": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "771": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "772": {
+          "mistakes": 2,
+          "score": 81,
+          "purple_first": false
+        },
+        "773": {
+          "mistakes": 4,
+          "score": 57,
+          "purple_first": false
+        },
+        "774": {
+          "mistakes": 0,
+          "score": 96,
+          "purple_first": false
+        },
+        "775": {
+          "mistakes": 0,
+          "score": 95,
+          "purple_first": false
+        },
+        "776": {
+          "mistakes": 4,
+          "score": 58,
+          "purple_first": false
+        },
+        "777": {
+          "mistakes": 1,
+          "score": 89,
+          "purple_first": false
+        },
+        "778": {
+          "mistakes": 3,
+          "score": 73,
+          "purple_first": false
+        },
+        "779": {
+          "mistakes": 4,
+          "score": 57,
+          "purple_first": false
+        },
+        "780": {
+          "mistakes": 1,
+          "score": 88,
+          "purple_first": false
         }
       },
       "mini": {}
@@ -825,6 +1121,10 @@
         "1471": {
           "guesses": 7.5,
           "failed": true
+        },
+        "1492": {
+          "guesses": 4,
+          "failed": false
         }
       },
       "connections": {
@@ -942,6 +1242,56 @@
           "mistakes": 0,
           "score": 96,
           "purple_first": false
+        },
+        "765": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "766": {
+          "mistakes": 2,
+          "score": 81,
+          "purple_first": false
+        },
+        "768": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "770": {
+          "mistakes": 3,
+          "score": 73,
+          "purple_first": false
+        },
+        "772": {
+          "mistakes": 2,
+          "score": 82,
+          "purple_first": false
+        },
+        "775": {
+          "mistakes": 4,
+          "score": 65,
+          "purple_first": false
+        },
+        "776": {
+          "mistakes": 4,
+          "score": 66,
+          "purple_first": false
+        },
+        "778": {
+          "mistakes": 2,
+          "score": 81,
+          "purple_first": false
+        },
+        "779": {
+          "mistakes": 3,
+          "score": 73,
+          "purple_first": false
+        },
+        "780": {
+          "mistakes": 0,
+          "score": 95,
+          "purple_first": false
         }
       },
       "mini": {}
@@ -1010,6 +1360,26 @@
         "1461": {
           "guesses": 4,
           "failed": false
+        },
+        "1489": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1490": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1500": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1501": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1503": {
+          "guesses": 4,
+          "failed": false
         }
       },
       "connections": {
@@ -1042,6 +1412,21 @@
           "mistakes": 0,
           "score": 95,
           "purple_first": false
+        },
+        "767": {
+          "mistakes": 0,
+          "score": 95,
+          "purple_first": false
+        },
+        "778": {
+          "mistakes": 3,
+          "score": 73,
+          "purple_first": false
+        },
+        "779": {
+          "mistakes": 3,
+          "score": 73,
+          "purple_first": false
         }
       },
       "mini": {}
@@ -1055,6 +1440,10 @@
         },
         "1481": {
           "guesses": 5,
+          "failed": false
+        },
+        "1487": {
+          "guesses": 4,
           "failed": false
         }
       },
@@ -1102,6 +1491,18 @@
         "1486": {
           "guesses": 5,
           "failed": false
+        },
+        "1487": {
+          "guesses": 5,
+          "failed": false
+        },
+        "1489": {
+          "guesses": 4,
+          "failed": false
+        },
+        "1498": {
+          "guesses": 4,
+          "failed": false
         }
       },
       "connections": {
@@ -1143,6 +1544,38 @@
         "764": {
           "mistakes": 2,
           "score": 81,
+          "purple_first": false
+        },
+        "767": {
+          "mistakes": 0,
+          "score": 95,
+          "purple_first": false
+        },
+        "775": {
+          "mistakes": 0,
+          "score": 97,
+          "purple_first": true
+        },
+        "777": {
+          "mistakes": 0,
+          "score": 95,
+          "purple_first": false
+        }
+      },
+      "mini": {}
+    },
+    "371244109383335937": {
+      "username": "bran4on",
+      "wordle": {
+        "1500": {
+          "guesses": 3,
+          "failed": false
+        }
+      },
+      "connections": {
+        "776": {
+          "mistakes": 4,
+          "score": 58,
           "purple_first": false
         }
       },

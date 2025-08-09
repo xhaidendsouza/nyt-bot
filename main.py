@@ -1,4 +1,4 @@
-import discord, os, json, dotenv, re, sys, pybound, io, calendar
+import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time
 from discord.ui import View, Button
 
 import matplotlib.pyplot as plt
@@ -16,23 +16,15 @@ dotenv.load_dotenv()
 
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
-
+r_token = ""
+channel_processing = False
 DATA_FILE = "data.json"
 
 GAME_CHANNEL_ID = 814691396841766952  # Parrot Server
-GAME_CHANNEL_ID = 1330386402432651355 # Dormin' Difference
+# GAME_CHANNEL_ID = 1330386402432651355 # Dormin' Difference
 WORDLE_REGEX = r"Wordle (\d+) ([1-6X])/6"
 CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
 
-def handle_seconds(seconds):
-    if seconds < 60:
-        t_time = f"{int(round(seconds))} seconds"
-        return t_time
-    else:
-        minutes = int(round(seconds // 60))
-        seconds = int(round(seconds % 60))
-        t_time = f"{minutes}:{seconds:02}"
-        return t_time
 
 def generate_connections_mistake_chart(distribution, filepath):
     guess_labels = ['0', '1', '2', '3', '4']  # Mistakes labels; 4 is loss
@@ -266,36 +258,89 @@ async def on_message(message):
 
 @bot.event
 async def on_ready():
+    global r_token
     print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
-    print("------\n\n")
-    print("Processing channel history...")
-    game_channel = bot.get_channel(GAME_CHANNEL_ID) or await bot.fetch_channel(GAME_CHANNEL_ID)
+    print("------")
+    chars = string.ascii_letters + string.digits  # A-Z, a-z, 0-9
+    r_token = ''.join(random.choice(chars) for _ in range(10))
+    print(f"Security Token: {r_token}")
 
+readGroup = bot.create_group(name="read", description="read")
+channelGroup = readGroup.create_subgroup(name="channel", description="channel")
+
+@channelGroup.command(name="history", description="Read channel history using the security token.")
+@discord.option("token", description="Security token")
+@discord.option("from_message", description="The message ID to start reading fro")
+async def read_channel_history(ctx, token, from_message=None):
+    global r_token
+    global channel_processing
+    await ctx.defer(ephemeral=False)  # You need non-ephemeral to update in channel
+
+    if token != r_token:
+        await ctx.respond("Incorrect security token.")
+        return
+    if channel_processing:
+        await ctx.respond("Channel history is already being processed.")
+        return
+    
+    channel_processing = True
+    start_time = time.time()
+
+    print("Processing channel history...")
+    game_channel = ctx.channel
+
+    if from_message:
+        try:
+            after_msg = await game_channel.fetch_message(int(from_message))
+        except:
+            await ctx.respond("Invalid message ID.")
+            after_msg = None
+    else:
+        after_msg = None
+
+        
     total_msgs = 0
-    async for _ in game_channel.history(limit=None, oldest_first=True):
+    async for _ in game_channel.history(limit=None, oldest_first=True, after=after_msg):
         total_msgs += 1
 
-    pybound.cursor_up(num=1)
-    pybound.erase_in_line("entireLine")
-    print("Reading channel history...")
+    # Send initial progress message
+    progress_msg = await ctx.send("Reading channel history...")
+
     processed = 0
     BAR_LENGTH = 30
 
-    async for message in game_channel.history(limit=None, oldest_first=True):
+    async for message in game_channel.history(limit=None, oldest_first=True, after=after_msg):
         await regex_message(message)
         processed += 1
+
         if processed % 10 == 0 or processed == total_msgs:
+            # Create progress bar
             progress_ratio = processed / total_msgs
             filled = int(BAR_LENGTH * progress_ratio)
             empty = BAR_LENGTH - filled
             bar = "▮" * filled + "▯" * empty
             percent = int(progress_ratio * 100)
+
+            # Console progress
             sys.stdout.write(f"\rProgress: [{bar}] {percent}% ({processed}/{total_msgs})")
             sys.stdout.flush()
-    pybound.cursor_up(num=2)
-    print("\n✅ Channel history read complete.")
-    pybound.cursor_down(num=2)
 
+            # Discord progress
+            await progress_msg.edit(content=f"Reading channel history...\n**Progress:** [{bar}] {percent}% ({processed}/{total_msgs})")
+
+    print("\n✅ Channel history read complete.")
+    channel_processing = False
+    end_time = time.time()
+    time_elapsed = end_time - start_time
+    if time_elapsed < 60:
+        time_elapsed = f"{time_elapsed:.2f} seconds"
+    else:
+        minutes = int(time_elapsed // 60)
+        secs = time_elapsed % 60
+        time_elapsed = f"{minutes}m {secs:.2f}s"
+
+    await progress_msg.edit(content=f"✅ Channel history read complete.\n**Messages processed:** {processed}\n**Time elapsed:** {time_elapsed:.2f}")
+    
 # ----------- /wordle_stats -------------
 wordleGroup = bot.create_group(name="wordle", description="wordle")
 @wordleGroup.command(name="stats", description="View someone's Wordle stats.")
@@ -398,6 +443,7 @@ async def wordle_stats(ctx, user: discord.User = None):
     embed_alltime.add_field(name="Win Rate", value=f"{win_rate}%")
     embed_alltime.add_field(name="Average Guesses", value=str(avg_score))
     embed_alltime.set_footer(text=f"Best Streak: {max_streak}🔥")
+    embed_alltime.add_field(name="Attempts")
     embed_alltime.set_image(url="attachment://wordle_bar_chart_alltime.png")
 
     embed_14day = discord.Embed(
@@ -408,6 +454,7 @@ async def wordle_stats(ctx, user: discord.User = None):
     embed_14day.add_field(name="Win Rate", value=f"{win_rate_14day}%")
     embed_14day.add_field(name="Average Guesses", value=str(avg_score_14day))
     embed_14day.set_footer(text=f"Current Streak: {current_streak}🔥")
+    embed_alltime.add_field(name="Attempts")
     embed_14day.set_image(url="attachment://wordle_bar_chart_14day.png")
 
     pages = [
@@ -479,6 +526,8 @@ async def connections_stats(ctx, user: discord.User = None):
     mistakes_14day = []
     total_14day = 0
     wins_14day = 0
+    purple_first_14day = 0
+    reverse_rainbow_14day = 0
 
     for pk in puzzle_keys:
         if start_puzzle_14day <= pk <= latest_puzzle:
@@ -487,8 +536,12 @@ async def connections_stats(ctx, user: discord.User = None):
             scores_14day.append(e["score"])
             if e["score"] >= 95:
                 perfects_14day += 1
+                if e["score"] == 99:
+                    reverse_rainbow_14day += 1
             if e["mistakes"] <= 3:
                 wins_14day += 1
+            if e["purple_first"]:
+                purple_first_14day += 1
             mistakes_14day.append(e["mistakes"])
 
     avg_score_14day = round(sum(scores_14day) / len(scores_14day), 2) if scores_14day else "N/A"
@@ -535,8 +588,8 @@ async def connections_stats(ctx, user: discord.User = None):
     embed_14day.add_field(name="Win Rate", value=f"{round((wins_14day / total_14day) * 100, 2) if total_14day else 0}%")
     embed_14day.add_field(name="Average Skill Score", value=str(avg_score_14day))
     embed_14day.add_field(name="# Perfects", value=str(perfects_14day))
-    embed_14day.add_field(name="# Purple Firsts", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
-    embed_14day.add_field(name="# Reverse Rainbows", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
+    embed_14day.add_field(name="# Purple Firsts", value=str(purple_first_14day))
+    embed_14day.add_field(name="# Reverse Rainbows", value=str(reverse_rainbow_14day))
     embed_14day.set_footer(text=f"Current Win Streak: {current_streak}🔥　　　　　　　　　　Current Perfect Streak: {current_perfect_streak}🔥")
     embed_14day.set_image(url="attachment://connections_mistake_14day.png")
 
