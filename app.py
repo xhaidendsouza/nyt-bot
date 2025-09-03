@@ -1,4 +1,4 @@
-import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time
+import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time, threading
 from discord.ui import View, Button
 
 
@@ -838,11 +838,14 @@ async def mini_leaderboard(ctx):
 
 # Run the bot
 
-bot.run(os.getenv("TOKEN"))
 
 @app.route("/")
 def index():
     return render_template("index.html")
+
+threading.Thread(target=lambda: bot.run(os.getenv("TOKEN"))).start()
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
