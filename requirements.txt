@@ -1,0 +1,9 @@
+Flask
+pandas
+gunicorn
+py-cord
+matplotlib
+Pillow
+python-dotenv
+pybound
+audioop-lts

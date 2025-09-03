@@ -1,11 +1,15 @@
-import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time, asyncio
+import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time, asyncio, threading
 from discord.ui import View, Button
+
 
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, timezone
 from PIL import Image, ImageDraw, ImageFont
 
 from io import BytesIO
+
+from flask import Flask, render_template
+app = Flask(__name__)
 
 
 # Emoji names and IDs (copy and paste for messaging and maybe reacting)
@@ -826,4 +830,15 @@ async def connections_leaderboard(ctx):
 
 
 # Run the bot
-bot.run(os.getenv("TOKEN"))
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+threading.Thread(target=lambda: bot.run(os.getenv("TOKEN"))).start()
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
