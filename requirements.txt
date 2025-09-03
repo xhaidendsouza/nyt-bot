@@ -1,7 +1,6 @@
 Flask
 pandas
 gunicorn
-discord.py
 py-cord
 matplotlib
 Pillow
