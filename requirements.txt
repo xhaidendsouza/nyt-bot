@@ -1,3 +1,9 @@
 Flask
 pandas
 gunicorn
+discord.py
+py-cord
+matplotlib
+Pillow
+python-dotenv
+pybound
