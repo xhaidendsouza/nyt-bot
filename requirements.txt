@@ -6,3 +6,4 @@ matplotlib
 Pillow
 python-dotenv
 pybound
+audioop-lts
