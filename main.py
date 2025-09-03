@@ -1,4 +1,4 @@
-import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time
+import discord, os, json, dotenv, re, sys, pybound, io, calendar, string, random, time, asyncio
 from discord.ui import View, Button
 
 import matplotlib.pyplot as plt
@@ -20,8 +20,8 @@ r_token = ""
 channel_processing = False
 DATA_FILE = "data.json"
 
-GAME_CHANNEL_ID = 814691396841766952  # Parrot Server
-# GAME_CHANNEL_ID = 1330386402432651355 # Dormin' Difference
+game_channel_ids = [814691396841766952, 1330386402432651355]  # Parrot Server, Dormin' Difference
+
 WORDLE_REGEX = r"Wordle (\d+) ([1-6X])/6"
 CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
 
@@ -252,7 +252,7 @@ async def regex_message(message):
 
 @bot.event
 async def on_message(message):
-    if message.author.bot or message.channel.id != GAME_CHANNEL_ID:
+    if message.author.bot or message.channel.id not in game_channel_ids:
         return
     await regex_message(message)
 
@@ -270,11 +270,11 @@ channelGroup = readGroup.create_subgroup(name="channel", description="channel")
 
 @channelGroup.command(name="history", description="Read channel history using the security token.")
 @discord.option("token", description="Security token")
-@discord.option("from_message", description="The message ID to start reading fro")
+@discord.option("from_message", description="The message ID to start reading from (optional)")
 async def read_channel_history(ctx, token, from_message=None):
     global r_token
     global channel_processing
-    await ctx.defer(ephemeral=False)  # You need non-ephemeral to update in channel
+    await ctx.defer(ephemeral=False)
 
     if token != r_token:
         await ctx.respond("Incorrect security token.")
@@ -298,35 +298,46 @@ async def read_channel_history(ctx, token, from_message=None):
     else:
         after_msg = None
 
+    progress_msg = await ctx.respond("Processing channel history...")
+    await progress_msg.edit(content="Processing channel history...")
+
         
     total_msgs = 0
     async for _ in game_channel.history(limit=None, oldest_first=True, after=after_msg):
         total_msgs += 1
 
     # Send initial progress message
-    progress_msg = await ctx.send("Reading channel history...")
+    await progress_msg.edit(content="Reading channel history...")
 
     processed = 0
-    BAR_LENGTH = 30
+
+    def create_bar(progress_ratio, bar_length):
+
+        filled = int(bar_length * progress_ratio)
+        empty = bar_length - filled
+
+        return filled, empty
+
 
     async for message in game_channel.history(limit=None, oldest_first=True, after=after_msg):
         await regex_message(message)
         processed += 1
 
         if processed % 10 == 0 or processed == total_msgs:
-            # Create progress bar
             progress_ratio = processed / total_msgs
-            filled = int(BAR_LENGTH * progress_ratio)
-            empty = BAR_LENGTH - filled
-            bar = "▮" * filled + "▯" * empty
+            discord_filled, discord_empty = create_bar(progress_ratio, 20)
+            terminal_filled, terminal_empty = create_bar(progress_ratio, 30)
+
+            terminal_bar = "▮" * terminal_filled + "▯" * terminal_empty
+            discord_bar = "🟩" * discord_filled + "⬛" * discord_empty
             percent = int(progress_ratio * 100)
 
             # Console progress
-            sys.stdout.write(f"\rProgress: [{bar}] {percent}% ({processed}/{total_msgs})")
+            sys.stdout.write(f"\rProgress: [{terminal_bar}] {percent}% ({processed}/{total_msgs})")
             sys.stdout.flush()
 
             # Discord progress
-            await progress_msg.edit(content=f"Reading channel history...\n**Progress:** [{bar}] {percent}% ({processed}/{total_msgs})")
+            await progress_msg.edit(content=f"Reading channel history...\n**Progress:** {discord_bar} {percent}% ({processed}/{total_msgs})")
 
     print("\n✅ Channel history read complete.")
     channel_processing = False
@@ -339,7 +350,10 @@ async def read_channel_history(ctx, token, from_message=None):
         secs = time_elapsed % 60
         time_elapsed = f"{minutes}m {secs:.2f}s"
 
-    await progress_msg.edit(content=f"✅ Channel history read complete.\n**Messages processed:** {processed}\n**Time elapsed:** {time_elapsed:.2f}")
+    await progress_msg.edit(content=f"✅ Channel history read complete.\n**Messages processed:** {processed}\n**Time elapsed:** {time_elapsed}")
+    await asyncio.sleep(2)
+    await progress_msg.delete()
+    await ctx.respond(f"✅ Channel history read complete.\n**Messages processed:** {processed}\n**Time elapsed:** {time_elapsed}", ephemeral=True)
     
 # ----------- /wordle_stats -------------
 wordleGroup = bot.create_group(name="wordle", description="wordle")
@@ -411,10 +425,10 @@ async def wordle_stats(ctx, user: discord.User = None):
     temp_streak = 0
     last_seen = None
 
-    sorted_entries = sorted(((int(k), v) for k, v in entries.items()), reverse=True)
+    sorted_entries = sorted(((int(k), v) for k, v in entries.items()))
 
     for num, entry in sorted_entries:
-        if last_seen is None or last_seen - 1 == num:
+        if last_seen is None or last_seen + 1 == num:
             if not entry["failed"]:
                 temp_streak += 1
                 if current_streak == 0:
@@ -443,18 +457,18 @@ async def wordle_stats(ctx, user: discord.User = None):
     embed_alltime.add_field(name="Win Rate", value=f"{win_rate}%")
     embed_alltime.add_field(name="Average Guesses", value=str(avg_score))
     embed_alltime.set_footer(text=f"Best Streak: {max_streak}🔥")
-    embed_alltime.add_field(name="Attempts")
+    embed_alltime.add_field(name="Attempts", value="")
     embed_alltime.set_image(url="attachment://wordle_bar_chart_alltime.png")
 
     embed_14day = discord.Embed(
         title=f"<:wordle:1393063212248858805> Current Wordle Stats for {user.name}",
-        color=discord.Color.blurple()
+        color=discord.Color.green()
     )
     embed_14day.add_field(name="Games Played", value=str(total_14day))
     embed_14day.add_field(name="Win Rate", value=f"{win_rate_14day}%")
     embed_14day.add_field(name="Average Guesses", value=str(avg_score_14day))
     embed_14day.set_footer(text=f"Current Streak: {current_streak}🔥")
-    embed_alltime.add_field(name="Attempts")
+    embed_14day.add_field(name="Attempts", value="")
     embed_14day.set_image(url="attachment://wordle_bar_chart_14day.png")
 
     pages = [
@@ -481,7 +495,7 @@ async def wordle_stats(ctx, user: discord.User = None):
             chart_file = discord.File(f, filename=pages[new_page]["filepath"].split("/")[-1])
             await interaction.response.edit_message(embed=pages[new_page]["embed"], view=view, file=chart_file)
 
-    toggle_button.callback = toggle_callback
+    toggle_button.callback = toggle_callback    
 
     chart_file_14day = discord.File("assets/wordle_bar_chart_14day.png", filename="wordle_bar_chart_14day.png")
     await ctx.respond(embed=embed_14day, view=view, file=chart_file_14day)
@@ -548,7 +562,8 @@ async def connections_stats(ctx, user: discord.User = None):
     mistake_distribution_14day = [mistakes_14day.count(i) for i in range(5)]
 
     # Calculate streaks (perfect and regular)
-    sorted_entries = sorted(((int(k), v) for k, v in entries.items()), reverse=True)
+    sorted_entries = sorted(((int(k), v) for k, v in entries.items()))
+    print(sorted_entries)
 
     max_streak = 0
     current_streak = 0
@@ -591,19 +606,21 @@ async def connections_stats(ctx, user: discord.User = None):
     embed_14day.add_field(name="# Purple Firsts", value=str(purple_first_14day))
     embed_14day.add_field(name="# Reverse Rainbows", value=str(reverse_rainbow_14day))
     embed_14day.set_footer(text=f"Current Win Streak: {current_streak}🔥　　　　　　　　　　Current Perfect Streak: {current_perfect_streak}🔥")
+    embed_14day.add_field(name="Mistakes", value="")
     embed_14day.set_image(url="attachment://connections_mistake_14day.png")
 
     embed_alltime = discord.Embed(
         title=f"<:connections:1393063471616102461> All-Time Connections Stats for {user.name}",
-        color=discord.Color.green()
+        color=discord.Color.blurple()
     )
     embed_alltime.add_field(name="Games Played", value=str(total))
     embed_alltime.add_field(name="Win Rate", value=f"{round((wins / total) * 100, 2) if total else 0}%")
     embed_alltime.add_field(name="Average Skill Score", value=str(avg_score))
-    embed_alltime.add_field(name="Perfect Solves", value=str(perfects))
-    embed_alltime.add_field(name="# Purple First", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
-    embed_alltime.add_field(name="# Reverse Rainbow", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
+    embed_alltime.add_field(name="# Perfects", value=str(perfects))
+    embed_alltime.add_field(name="# Purple Firsts", value=str(sum(1 for e in entries.values() if e.get("purple_first", False))))
+    embed_alltime.add_field(name="# Reverse Rainbows", value=str(sum(1 for e in entries.values() if e["score"] == 99)))
     embed_alltime.set_footer(text=f"Best Win Streak: {max_streak}🔥　　　　　　　　　　　　　Best Perfect Streak: {perfect_streak}🔥")
+    embed_alltime.add_field(name="Mistakes", value="")
     embed_alltime.set_image(url="attachment://connections_mistake_alltime.png")
 
     pages = [
@@ -636,201 +653,177 @@ async def connections_stats(ctx, user: discord.User = None):
     await ctx.respond(embed=embed_14day, view=view, file=chart_file_14day)
 
 # ----------- /wordle_leaderboard -------------
-@wordleGroup.command(name="leaderboard", description="Wordle leaderboard.")
-@discord.option("range", choices=["day", "week", "month"], required=True)
-async def wordle_leaderboard(ctx, range: str):
+@wordleGroup.command(name="leaderboard", description="Wordle leaderboard")
+async def wordle_leaderboard(ctx):
     await ctx.defer()
     data = load_data()
+
     today = datetime.now(timezone.utc)
-    cutoff = today - {
-        "day": timedelta(days=1),
-        "week": timedelta(weeks=1),
-        "month": timedelta(days=30)
-    }[range]
 
     scores = []
     for _, user_data in data["users"].items():
         if "wordle" not in user_data:
             continue
+
+        entries = user_data["wordle"]
+        if not entries:
+            continue
+
+        # Get wordle numbers sorted
+        wordle_numbers = sorted(int(k) for k in entries.keys())
+        latest_wordle = wordle_numbers[-1]
+
+        start_wordle_14day = max(latest_wordle - 13, wordle_numbers[0])
+
         total_guesses = 0
         count = 0
-        for puzzle_id_str, e in user_data["wordle"].items():
+        for wn in wordle_numbers:
+            if start_wordle_14day <= wn <= latest_wordle:
+                e = entries[str(wn)]
+                if not e["failed"]:
+                    total_guesses += e["guesses"]
+                    count += 1
 
-            if not e["failed"]:
-                total_guesses += e["guesses"]
-                count += 1
         if count > 0:
             avg = total_guesses / count
             scores.append((user_data["username"], round(avg, 2), count))
 
     if not scores:
-        await ctx.respond(f"No Wordle entries found.")
+        await ctx.respond("No Wordle entries found for the last 14 days.")
         return
 
+    # Sort ascending by avg guesses (lower is better)
     scores.sort(key=lambda x: x[1])
-    text = "\n".join([f"**{i+1}. {u}** — {avg} avg over {n} games" for i, (u, avg, n) in enumerate(scores)])
-    await ctx.respond(f"🏆 **Wordle Leaderboard**\n{text}")
 
-# ----------- /leaderboard_connections -------------
-@connectionsGroup.command(name="leaderboard", description="Connections leaderboard.")
-@discord.option("range", choices=["day", "week", "month"], required=True)
-async def leaderboard_connections(ctx, range: str):
+    PER_PAGE = 10
+    pages = []
+    for i in range(0, len(scores), PER_PAGE):
+        chunk = scores[i:i+PER_PAGE]
+        description = "\n".join(
+            f"**{i+1}. {u}** — {avg} avg over {n} games"
+            for i, (u, avg, n) in enumerate(chunk, start=i+1)
+        )
+        embed = discord.Embed(
+            title="🏆 Wordle Leaderboard (Last 14 Days)",
+            description=description,
+            color=discord.Color.green()
+        )
+        pages.append(embed)
+
+    view = View(timeout=120)
+    view.current_page = 0
+
+    btn_prev = Button(label="⬅️ Previous", style=discord.ButtonStyle.secondary)
+    btn_next = Button(label="Next ➡️", style=discord.ButtonStyle.secondary)
+    view.add_item(btn_prev)
+    view.add_item(btn_next)
+
+    async def prev_callback(interaction):
+        if interaction.user != ctx.author:
+            await interaction.response.send_message("You're not allowed to use this.", ephemeral=True)
+            return
+        view.current_page = (view.current_page - 1) % len(pages)
+        embed = pages[view.current_page]
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def next_callback(interaction):
+        if interaction.user != ctx.author:
+            await interaction.response.send_message("You're not allowed to use this.", ephemeral=True)
+            return
+        view.current_page = (view.current_page + 1) % len(pages)
+        embed = pages[view.current_page]
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    btn_prev.callback = prev_callback
+    btn_next.callback = next_callback
+
+    await ctx.respond(embed=pages[0], view=view)
+
+
+# ----------- /connections_leaderboard -------------
+@connectionsGroup.command(name="leaderboard", description="Connections leaderboard")
+async def connections_leaderboard(ctx):
     await ctx.defer()
     data = load_data()
-    today = datetime.now(timezone.utc)
-    cutoff = today - {
-        "day": timedelta(days=1),
-        "week": timedelta(weeks=1),
-        "month": timedelta(days=30)
-    }[range]
 
     scores = []
     for _, user_data in data["users"].items():
         if "connections" not in user_data:
             continue
+
+        entries = user_data["connections"]
+        if not entries:
+            continue
+
+        puzzle_keys = sorted(int(k) for k in entries.keys())
+        latest_puzzle = puzzle_keys[-1]
+
+        start_puzzle_14day = max(latest_puzzle - 13, puzzle_keys[0])
+
         total_score = 0
         count = 0
-        for puzzle_id_str, e in user_data["connections"].items():
-            # Same as Wordle, no date info so cannot filter by cutoff
-            total_score += e["score"]
-            count += 1
+        for pk in puzzle_keys:
+            if start_puzzle_14day <= pk <= latest_puzzle:
+                e = entries[str(pk)]
+                total_score += e["score"]
+                count += 1
+
         if count > 0:
             avg = total_score / count
             scores.append((user_data["username"], round(avg, 2), count))
 
     if not scores:
-        await ctx.respond(f"No Connections entries found.")
+        await ctx.respond("No Connections entries found for the last 14 days.")
         return
 
+    # Sort descending by avg score (higher is better)
     scores.sort(key=lambda x: x[1], reverse=True)
-    text = "\n".join([f"**{i+1}. {u}** — {avg} avg over {n} games" for i, (u, avg, n) in enumerate(scores)])
-    await ctx.respond(f"🏆 **Connections Leaderboard**\n{text}")
 
+    PER_PAGE = 10
+    pages = []
+    for i in range(0, len(scores), PER_PAGE):
+        chunk = scores[i:i+PER_PAGE]
+        description = "\n".join(
+            f"**{i+1}. {u}** — {avg} avg over {n} games"
+            for i, (u, avg, n) in enumerate(chunk, start=i+1)
+        )
+        embed = discord.Embed(
+            title="🏆 Connections Leaderboard",
+            description=description,
+            color=discord.Color.blurple()
+        )
+        pages.append(embed)
 
-miniGroup = bot.create_group(name="mini", description="mini crossword")
+    view = View(timeout=120)
+    view.current_page = 0
 
-@miniGroup.command(name="report", description="Report your Mini Crossword result.")
-@discord.option("date", description="Date in MM/DD/YYYY format", required=True)
-@discord.option("time", description="Completion time (in seconds or mm:ss)", required=True)
-async def mini_report(ctx, date: str, time: str):
-    await ctx.defer()
-    user = ctx.author
-    uid = str(user.id)
-    username = user.name
-    data = load_data()
+    btn_prev = Button(label="⬅️ Previous", style=discord.ButtonStyle.secondary)
+    btn_next = Button(label="Next ➡️", style=discord.ButtonStyle.secondary)
+    view.add_item(btn_prev)
+    view.add_item(btn_next)
 
-    try:
-        # Convert mm:ss or s to total seconds
-        if ":" in time:
-            minutes, seconds = map(int, time.split(":"))
-            total_seconds = minutes * 60 + seconds
-        else:
-            total_seconds = int(time)
-    except ValueError:
-        await ctx.respond("⚠️ Invalid time format. Use seconds or mm:ss.")
-        return
+    async def prev_callback(interaction):
+        if interaction.user != ctx.author:
+            await interaction.response.send_message("You're not allowed to use this.", ephemeral=True)
+            return
+        view.current_page = (view.current_page - 1) % len(pages)
+        embed = pages[view.current_page]
+        await interaction.response.edit_message(embed=embed, view=view)
 
-    try:
-        dt_obj = datetime.strptime(date, "%m/%d/%Y")
-        f_date = dt_obj.strftime("%A %m/%d/%Y")  # e.g., Friday 07/12/2025
-    except ValueError:
-        await ctx.respond("⚠️ Invalid date format. Use MM/DD/YYYY.")
-        return
+    async def next_callback(interaction):
+        if interaction.user != ctx.author:
+            await interaction.response.send_message("You're not allowed to use this.", ephemeral=True)
+            return
+        view.current_page = (view.current_page + 1) % len(pages)
+        
+        embed = pages[view.current_page]
+        await interaction.response.edit_message(embed=embed, view=view)
 
-    # Store data
-    data["users"].setdefault(uid, {"username": username, "wordle": {}, "connections": {}, "mini": {}})
-    data["users"][uid]["username"] = username
-    data["users"][uid].setdefault("mini", {})
-    data["users"][uid]["mini"][f_date] = total_seconds
-    save_data(data)
+    btn_prev.callback = prev_callback
+    btn_next.callback = next_callback
 
-    # Generate image
-    try:
-        img = Image.open("assets/mini_template.png").convert("RGBA")
-        draw = ImageDraw.Draw(img)
+    await ctx.respond(embed=pages[0], view=view)
 
-        # Choose a font (you may need to provide your own TTF)
-
-        # Text positions
-        w, h = img.size
-
-        # Username center
-        text_user = username
-        text_w, text_h = draw.textsize(text_user)
-        draw.text(((w - text_w) / 2, h / 2 - text_h / 2), text_user, fill="black")
-
-        # Date bottom center
-        text_date = f_date
-        date_w, date_h = draw.textsize(text_date)
-        draw.text(((w - date_w) / 2, h - date_h - 40), text_date, fill="black")
-
-        # Send image
-        with BytesIO() as img_bytes:
-            img.save(img_bytes, format="PNG")
-            img_bytes.seek(0)
-            await ctx.respond(file=discord.File(img_bytes, filename="mini_report.png"))
-
-    except Exception as e:
-        await ctx.respond(f"❌ Failed to generate image: {e}")
-
-@miniGroup.command(name="stats", description="View someone's Mini Crossword stats.")
-@discord.option("user", description="User to view stats for", required=False)
-async def mini_stats(ctx, user: discord.User = None):
-    await ctx.defer()
-    user = user or ctx.author
-    uid = str(user.id)
-    data = load_data()
-
-    if uid not in data["users"] or "mini" not in data["users"][uid]:
-        await ctx.respond(f"No Mini Crossword data found for {user.mention}.")
-        return
-
-    entries = data["users"][uid]["mini"]
-    times = [(d, t) for d, t in entries.items()]
-    times.sort(key=lambda x: x[0], reverse=True)
-
-    # Compute stats
-    last_14 = [t for d, t in times[:14]]
-    best_time = min(entries.values())
-    avg_14 = round(sum(last_14) / len(last_14), 2) if last_14 else "N/A"
-
-    
-
-    await ctx.respond(
-        f"🧠 **Mini Crossword Stats for {user.mention}**\n"
-        f"14-day Average: {handle_seconds(avg_14)} sec\n"
-        f"Best Time: {handle_seconds(best_time)} sec\n"
-        f"Games Recorded: {len(entries)}"
-    )
-
-@miniGroup.command(name="leaderboard", description="Mini Crossword leaderboard.")
-async def mini_leaderboard(ctx):
-    await ctx.defer()
-    data = load_data()
-    today = datetime.now(timezone.utc)
-    cutoff = today - timedelta(days=14)
-
-    scores = []
-    for uid, user_data in data["users"].items():
-        if "mini" not in user_data:
-            continue
-
-        entries = [(datetime.strptime(d, "%Y-%m-%d"), t) for d, t in user_data["mini"].items()]
-        recent = [t for date, t in entries if date >= cutoff]
-        if recent:
-            avg = round(sum(recent) / len(recent), 2)
-            scores.append((user_data["username"], avg, len(recent)))
-
-    if not scores:
-        await ctx.respond("No Mini Crossword entries in the last 14 days.")
-        return
-
-    scores.sort(key=lambda x: x[1])
-    leaderboard = "\n".join([
-        f"**{i+1}. {name}** — {avg} sec over {count} games"
-        for i, (name, avg, count) in enumerate(scores)
-    ])
-    await ctx.respond(f"🏁 **Mini Crossword Leaderboard (14-day avg)**\n{leaderboard}")
 
 # Run the bot
 bot.run(os.getenv("TOKEN"))
