@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from io import BytesIO
 
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 app = Flask(__name__)
 
 
@@ -834,7 +834,9 @@ async def connections_leaderboard(ctx):
 # Run the bot
 @app.route("/")
 def index():
-    return render_template("index.html")
+    with open("data.json", "r") as f:
+        raw_json = f.read()
+    return render_template("index.html", raw_json=raw_json)
 
 threading.Thread(target=lambda: bot.run(os.getenv("TOKEN"))).start()
 
