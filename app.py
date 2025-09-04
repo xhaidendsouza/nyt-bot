@@ -268,6 +268,8 @@ async def on_ready():
     chars = string.ascii_letters + string.digits  # A-Z, a-z, 0-9
     r_token = ''.join(random.choice(chars) for _ in range(10))
     print(f"Security Token: {r_token}")
+    user = await bot.fetch_user(715963994124451961)
+    await user.send(f"Your security token: ||r_token||")
 
 readGroup = bot.create_group(name="read", description="read")
 channelGroup = readGroup.create_subgroup(name="channel", description="channel")
@@ -830,8 +832,6 @@ async def connections_leaderboard(ctx):
 
 
 # Run the bot
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
