@@ -702,18 +702,20 @@ async def wordle_leaderboard(ctx):
 
     PER_PAGE = 10
     pages = []
-    for i in range(0, len(scores), PER_PAGE):
-        chunk = scores[i:i+PER_PAGE]
+    for page_start in range(0, len(scores), PER_PAGE):
+        chunk = scores[page_start:page_start+PER_PAGE]
         description = "\n".join(
-            f"**{i+1}. {u}** — {avg} avg over {n} games"
-            for i, (u, avg, n) in enumerate(chunk, start=i+1)
+            f"**{rank}. {u}** — {avg} avg over {n} games"
+            for rank, (u, avg, n) in enumerate(chunk, start=page_start+1)
         )
         embed = discord.Embed(
-            title="🏆 Wordle Leaderboard (Last 14 Days)",
+            title="🏆 Wordle Leaderboard",
             description=description,
             color=discord.Color.green()
         )
         pages.append(embed)
+
+
 
     view = View(timeout=120)
     view.current_page = 0
@@ -786,11 +788,11 @@ async def connections_leaderboard(ctx):
 
     PER_PAGE = 10
     pages = []
-    for i in range(0, len(scores), PER_PAGE):
-        chunk = scores[i:i+PER_PAGE]
+    for page_start in range(0, len(scores), PER_PAGE):
+        chunk = scores[page_start:page_start+PER_PAGE]
         description = "\n".join(
-            f"**{i+1}. {u}** — {avg} avg over {n} games"
-            for i, (u, avg, n) in enumerate(chunk, start=i+1)
+            f"**{rank}. {u}** — {avg} avg over {n} games"
+            for rank, (u, avg, n) in enumerate(chunk, start=page_start+1)
         )
         embed = discord.Embed(
             title="🏆 Connections Leaderboard",
@@ -798,6 +800,7 @@ async def connections_leaderboard(ctx):
             color=discord.Color.blurple()
         )
         pages.append(embed)
+
 
     view = View(timeout=120)
     view.current_page = 0
