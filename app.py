@@ -29,7 +29,6 @@ game_channel_ids = [814691396841766952, 1330386402432651355]  # Parrot Server, D
 WORDLE_REGEX = r"Wordle (\d+) ([1-6X])/6"
 CONN_REGEX = r"Connections\nPuzzle #(\d+)\n([\s\S]+)"
 
-
 def generate_connections_mistake_chart(distribution, filepath):
     guess_labels = ['0', '1', '2', '3', '4']  # Mistakes labels; 4 is loss
 
@@ -269,7 +268,7 @@ async def on_ready():
     r_token = ''.join(random.choice(chars) for _ in range(10))
     print(f"Security Token: {r_token}")
     user = await bot.fetch_user(715963994124451961)
-    await user.send(f"Your security token: ||r_token||")
+    await user.send(f"Your security token: ||{r_token}||")
 
 readGroup = bot.create_group(name="read", description="read")
 channelGroup = readGroup.create_subgroup(name="channel", description="channel")
